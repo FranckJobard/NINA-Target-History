@@ -17,11 +17,15 @@ public sealed class TargetHistoryDockable : DockableVM, IDisposable {
         Title = "Target History";
         History = new TargetHistoryViewModel();
 
-        // Use N.I.N.A.'s standard puzzle-piece geometry so the panel never depends
-        // on a plugin-specific icon resource during startup.
-        if (System.Windows.Application.Current?.Resources["PuzzlePieceSVG"] is System.Windows.Media.GeometryGroup icon) {
-            ImageGeometry = icon;
-        }
+        // Dedicated Target History icon: clock/history symbol, with no external resource dependency.
+        var icon = new System.Windows.Media.GeometryGroup();
+        icon.Children.Add(new System.Windows.Media.CombinedGeometry(
+            System.Windows.Media.GeometryCombineMode.Exclude,
+            new System.Windows.Media.EllipseGeometry(new System.Windows.Point(12, 12), 10, 10),
+            new System.Windows.Media.EllipseGeometry(new System.Windows.Point(12, 12), 7.5, 7.5)));
+        icon.Children.Add(new System.Windows.Media.RectangleGeometry(new System.Windows.Rect(11, 6, 2, 7)));
+        icon.Children.Add(new System.Windows.Media.RectangleGeometry(new System.Windows.Rect(12, 11, 6, 2)));
+        ImageGeometry = icon;
     }
 
     public void Dispose() => History.Dispose();
