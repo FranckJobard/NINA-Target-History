@@ -10,7 +10,7 @@ public sealed class PluginSettings {
     public PluginSettings() {
         var folder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "NINA", "Plugins", "TargetHistory");
+            "NINA", "Plugins", "3.0.0", "TargetHistory");
         Directory.CreateDirectory(folder);
         _path = Path.Combine(folder, "settings.json");
     }
