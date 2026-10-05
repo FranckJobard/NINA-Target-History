@@ -25,6 +25,11 @@ public sealed class TargetHistoryDockable : DockableVM, IDisposable {
             new System.Windows.Media.EllipseGeometry(new System.Windows.Point(12, 12), 7.5, 7.5)));
         icon.Children.Add(new System.Windows.Media.RectangleGeometry(new System.Windows.Rect(11, 6, 2, 7)));
         icon.Children.Add(new System.Windows.Media.RectangleGeometry(new System.Windows.Rect(12, 11, 6, 2)));
+
+        // Dockable view models can be composed by N.I.N.A. away from the UI thread.
+        // Freeze the Freezable geometry before WPF binds to it on the Imaging UI thread.
+        // A frozen Freezable is thread-safe and can be shared across dispatchers.
+        icon.Freeze();
         ImageGeometry = icon;
     }
 
