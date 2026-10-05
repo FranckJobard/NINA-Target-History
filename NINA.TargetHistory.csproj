@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>NINA.TargetHistory</RootNamespace>
@@ -17,6 +17,7 @@
     <AssemblyTitle>Target History</AssemblyTitle>
     <Title>Target History</Title>
     <Authors>Deep Sky Chile</Authors>
+    <Company>Deep Sky Chile</Company>
     <Product>N.I.N.A. Target History</Product>
     <Description>Historical target and exposure catalogue for N.I.N.A.</Description>
     <Platforms>AnyCPU;x64</Platforms>
