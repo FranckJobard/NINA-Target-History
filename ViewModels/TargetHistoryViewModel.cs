@@ -17,33 +17,21 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     private string _search = "";
     private string _status = "All";
     private readonly object _targetsSync = new();
-    private ICollectionView? _view;
+    private ICollectionView? _imagedView;
+    private ICollectionView? _plannedView;
 
     public ObservableCollection<TargetHistoryItem> Targets { get; } = new();
-    public ICollectionView View {
-        get {
-            if (_view is null) {
-                _view = CreateView();
-                if (_store is not null) {
-                    var dispatcher = System.Windows.Application.Current?.Dispatcher;
-                    if (dispatcher is not null)
-                        dispatcher.BeginInvoke(new Action(Rebuild), System.Windows.Threading.DispatcherPriority.Loaded);
-                    else
-                        Rebuild();
-                }
-            }
-            return _view;
-        }
-    }
+    public ICollectionView ImagedView => _imagedView ??= CreateView(true);
+    public ICollectionView PlannedView => _plannedView ??= CreateView(false);
 
     public string Search {
         get => _search;
-        set { if (Set(ref _search, value)) View.Refresh(); }
+        set { if (Set(ref _search, value)) RefreshViews(); }
     }
 
     public string Status {
         get => _status;
-        set { if (Set(ref _status, value)) View.Refresh(); }
+        set { if (Set(ref _status, value)) RefreshViews(); }
     }
 
     public string SequenceFolder {
@@ -67,10 +55,11 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             Attach(SequenceFolder);
     }
 
-    private ICollectionView CreateView() {
+    private ICollectionView CreateView(bool imaged) {
         BindingOperations.EnableCollectionSynchronization(Targets, _targetsSync);
-        var view = CollectionViewSource.GetDefaultView(Targets);
-        view.Filter = Filter;
+        var source = new CollectionViewSource { Source = Targets };
+        var view = source.View;
+        view.Filter = obj => obj is TargetHistoryItem item && (imaged ? item.TotalSeconds > 0 : item.TotalSeconds <= 0) && Filter(item);
         view.SortDescriptions.Add(new SortDescription(nameof(TargetHistoryItem.Name), ListSortDirection.Ascending));
         return view;
     }
@@ -122,7 +111,12 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             Targets.Clear();
             foreach (var item in data) Targets.Add(item);
         }
-        _view?.Refresh();
+        RefreshViews();
+    }
+
+    private void RefreshViews() {
+        _imagedView?.Refresh();
+        _plannedView?.Refresh();
     }
 
     private static void OpenAstroBin(object? parameter) {
