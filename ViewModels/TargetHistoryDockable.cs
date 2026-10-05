@@ -19,7 +19,7 @@ public sealed class TargetHistoryDockable : DockableVM, IDisposable {
 
         // Use N.I.N.A.'s standard puzzle-piece geometry so the panel never depends
         // on a plugin-specific icon resource during startup.
-        if (Application.Current?.Resources["PuzzlePieceSVG"] is System.Windows.Media.GeometryGroup icon) {
+        if (System.Windows.Application.Current?.Resources["PuzzlePieceSVG"] is System.Windows.Media.GeometryGroup icon) {
             ImageGeometry = icon;
         }
     }
