@@ -1,0 +1,8 @@
+Parser validation reference from the supplied CG4.json:
+Target: ESO 208-27
+Position angle: 0°
+R: 30 x 300 s = 2h30
+G: 30 x 300 s = 2h30
+B: 30 x 300 s = 2h30
+L: 88 x 300 s = 7h20
+Total ExposureInfoList: 14h50

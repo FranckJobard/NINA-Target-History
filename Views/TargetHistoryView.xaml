@@ -1,0 +1,78 @@
+<UserControl x:Class="NINA.TargetHistory.Views.TargetHistoryView"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:models="clr-namespace:NINA.TargetHistory.Models">
+ <Grid Margin="12">
+  <Grid.RowDefinitions>
+   <RowDefinition Height="Auto"/>
+   <RowDefinition Height="Auto"/>
+   <RowDefinition Height="*"/>
+  </Grid.RowDefinitions>
+
+  <Grid>
+   <Grid.ColumnDefinitions>
+    <ColumnDefinition Width="*"/>
+    <ColumnDefinition Width="Auto"/>
+    <ColumnDefinition Width="Auto"/>
+   </Grid.ColumnDefinitions>
+   <TextBox Grid.Column="0" Margin="0,0,8,0" Padding="8,5"
+            Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}"
+            ToolTip="Search target"/>
+   <ComboBox Grid.Column="1" Width="120" Margin="0,0,8,0"
+             SelectedValuePath="Content" SelectedValue="{Binding Status}">
+    <ComboBoxItem Content="All"/>
+    <ComboBoxItem Content="In progress"/>
+    <ComboBoxItem Content="Finished"/>
+   </ComboBox>
+   <Button Grid.Column="2" Content="Refresh" Padding="12,5"
+           Command="{Binding RefreshCommand}"/>
+  </Grid>
+
+  <DockPanel Grid.Row="1" Margin="0,8,0,8">
+   <Button DockPanel.Dock="Right" Content="Sequences folder…" Padding="10,4"
+           Command="{Binding BrowseCommand}"/>
+   <TextBlock VerticalAlignment="Center" Text="{Binding SequenceFolder}"
+              TextTrimming="CharacterEllipsis"/>
+  </DockPanel>
+
+  <DataGrid Grid.Row="2" ItemsSource="{Binding View}" AutoGenerateColumns="False"
+            IsReadOnly="False" CanUserAddRows="False" HeadersVisibility="Column"
+            GridLinesVisibility="Horizontal" SelectionMode="Single">
+   <DataGrid.Columns>
+    <DataGridTextColumn Header="Target" Binding="{Binding Name}" IsReadOnly="True" Width="2*"/>
+    <DataGridTemplateColumn Header="Exposures" Width="4*">
+     <DataGridTemplateColumn.CellTemplate>
+      <DataTemplate>
+       <ItemsControl ItemsSource="{Binding Filters}">
+        <ItemsControl.ItemsPanel>
+         <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+         <DataTemplate>
+          <Border Margin="0,0,8,0">
+           <TextBlock>
+            <Run Text="{Binding Name}"/><Run Text=" "/><Run Text="{Binding Display}"/>
+           </TextBlock>
+          </Border>
+         </DataTemplate>
+        </ItemsControl.ItemTemplate>
+       </ItemsControl>
+      </DataTemplate>
+     </DataGridTemplateColumn.CellTemplate>
+    </DataGridTemplateColumn>
+    <DataGridTextColumn Header="Total" Binding="{Binding TotalDisplay}" IsReadOnly="True" Width="90"/>
+    <DataGridCheckBoxColumn Header="Finished" Binding="{Binding Finished, Mode=TwoWay}" Width="75"/>
+    <DataGridTextColumn Header="AstroBin URL" Binding="{Binding AstroBinUrl, Mode=TwoWay}" Width="2*"/>
+    <DataGridTemplateColumn Header="" Width="70">
+     <DataGridTemplateColumn.CellTemplate>
+      <DataTemplate>
+       <Button Content="Open"
+        Command="{Binding DataContext.OpenAstroBinCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+        CommandParameter="{Binding}"/>
+      </DataTemplate>
+     </DataGridTemplateColumn.CellTemplate>
+    </DataGridTemplateColumn>
+   </DataGrid.Columns>
+  </DataGrid>
+ </Grid>
+</UserControl>
