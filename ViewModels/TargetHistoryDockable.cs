@@ -4,6 +4,8 @@ using System.Windows;
 using NINA.Equipment.Interfaces.ViewModel;
 using NINA.Profile.Interfaces;
 using NINA.WPF.Base.ViewModel;
+using NINA.WPF.Base.Interfaces.ViewModel;
+using NINA.WPF.Base.Interfaces.Mediator;
 
 namespace NINA.TargetHistory.ViewModels;
 
@@ -13,9 +15,9 @@ public sealed class TargetHistoryDockable : DockableVM, IDisposable {
     public TargetHistoryViewModel History { get; }
 
     [ImportingConstructor]
-    public TargetHistoryDockable(IProfileService profileService) : base(profileService) {
+    public TargetHistoryDockable(IProfileService profileService, IFramingAssistantVM framingAssistantVM, IApplicationMediator applicationMediator) : base(profileService) {
         Title = "Target History";
-        History = new TargetHistoryViewModel(profileService.ActiveProfile.SequenceSettings.DefaultSequenceFolder);
+        History = new TargetHistoryViewModel(profileService, framingAssistantVM, applicationMediator);
 
         // Dedicated Target History icon: clock/history symbol, with no external resource dependency.
         var icon = new System.Windows.Media.GeometryGroup();
