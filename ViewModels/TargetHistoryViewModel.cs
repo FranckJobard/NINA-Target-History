@@ -51,8 +51,8 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         OpenAstroBinCommand = new RelayCommand(OpenAstroBin);
         SaveMetadataCommand = new RelayCommand(_ => _store?.SaveMetadata(Targets));
 
-        if (Directory.Exists(SequenceFolder))
-            Attach(SequenceFolder);
+        // Do not scan or touch WPF collections here. N.I.N.A. can construct
+        // dockables off the UI thread. Initialization is deferred until the view is Loaded.
     }
 
     private ICollectionView CreateView(bool imaged) {
@@ -98,7 +98,24 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         Rebuild();
     }
 
-    public void RefreshAfterViewLoaded() => Rebuild();
+    public void RefreshAfterViewLoaded() {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess()) {
+            dispatcher.BeginInvoke(new Action(RefreshAfterViewLoaded));
+            return;
+        }
+
+        // Force both CollectionViews to be created on the WPF UI thread before
+        // any target collection changes occur.
+        _ = ImagedView;
+        _ = PlannedView;
+
+        if (Directory.Exists(SequenceFolder)) {
+            Attach(SequenceFolder);
+        } else {
+            RefreshViews();
+        }
+    }
 
     private void Rebuild() {
         if (_store is null) return;
