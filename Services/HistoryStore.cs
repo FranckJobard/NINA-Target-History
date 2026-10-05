@@ -13,7 +13,7 @@ public sealed class HistoryStore {
         _folder = folder;
         var appData = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "NINA", "Plugins", "TargetHistory");
+            "NINA", "Plugins", "3.0.0", "TargetHistory");
         Directory.CreateDirectory(appData);
         _settingsFile = Path.Combine(appData, "targets.json");
     }
