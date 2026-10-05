@@ -24,9 +24,9 @@ public partial class TargetHistoryView : System.Windows.Controls.UserControl {
         if (IsLoaded) QueueInitialization();
     }
 
-    private void TargetRow_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
-        if (sender is DataGridRow row
-            && row.Item is TargetHistoryItem target
+    private void TargetGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+        if (sender is DataGrid grid
+            && grid.SelectedItem is TargetHistoryItem target
             && DataContext is TargetHistoryViewModel vm) {
             vm.OpenTargetInFraming(target);
             e.Handled = true;
