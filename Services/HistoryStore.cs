@@ -27,6 +27,16 @@ public sealed class HistoryStore {
                 try { parsed.AddRange(_parser.Parse(file)); }
                 catch { /* one malformed/in-use sequence must not kill the catalogue */ }
             }
+
+            // N.I.N.A.'s standard "targets" subfolder contains prepared targets.
+            // Include these as planned targets, but do not recurse into any other subfolder.
+            var targetsFolder = Path.Combine(_folder, "targets");
+            if (Directory.Exists(targetsFolder)) {
+                foreach (var file in Directory.EnumerateFiles(targetsFolder, "*.json", SearchOption.TopDirectoryOnly)) {
+                    try { parsed.AddRange(_parser.Parse(file)); }
+                    catch { /* one malformed/in-use target must not kill the catalogue */ }
+                }
+            }
         }
 
         var items = parsed
