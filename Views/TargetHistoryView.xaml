@@ -43,6 +43,8 @@
             GridLinesVisibility="Horizontal" SelectionMode="Single" VerticalContentAlignment="Center"
             RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick">
    <DataGrid.Resources>
+    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent"/>
     <Style TargetType="{x:Type DataGridCell}"><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
    </DataGrid.Resources>
    <DataGrid.Columns>
@@ -102,6 +104,8 @@
             GridLinesVisibility="Horizontal" SelectionMode="Single"
             VerticalContentAlignment="Center" RowHeight="18">
    <DataGrid.Resources>
+    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent"/>
     <Style TargetType="{x:Type DataGridCell}">
      <Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
     </Style>
