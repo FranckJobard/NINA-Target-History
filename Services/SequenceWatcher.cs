@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace NINA.TargetHistory.Services;
 
 public sealed class SequenceWatcher : IDisposable {
