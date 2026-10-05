@@ -23,7 +23,7 @@ public sealed class HistoryStore {
         var parsed = new List<SequenceTarget>();
 
         if (Directory.Exists(_folder)) {
-            foreach (var file in Directory.EnumerateFiles(_folder, "*.json", SearchOption.AllDirectories)) {
+            foreach (var file in Directory.EnumerateFiles(_folder, "*.json", SearchOption.TopDirectoryOnly)) {
                 try { parsed.AddRange(_parser.Parse(file)); }
                 catch { /* one malformed/in-use sequence must not kill the catalogue */ }
             }
