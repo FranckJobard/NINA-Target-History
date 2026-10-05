@@ -24,10 +24,21 @@ public partial class TargetHistoryView : System.Windows.Controls.UserControl {
         if (IsLoaded) QueueInitialization();
     }
 
+    private void TargetGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+        if (sender is DataGrid grid && grid.SelectedItems.Count > 0) {
+            grid.UnselectAll();
+        }
+    }
+
     private void TargetGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
-        if (sender is DataGrid grid
-            && grid.SelectedItem is TargetHistoryItem target
-            && DataContext is TargetHistoryViewModel vm) {
+        if (DataContext is not TargetHistoryViewModel vm) return;
+
+        DependencyObject? source = e.OriginalSource as DependencyObject;
+        while (source is not null && source is not DataGridRow) {
+            source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+        }
+
+        if (source is DataGridRow row && row.Item is TargetHistoryItem target) {
             vm.OpenTargetInFraming(target);
             e.Handled = true;
         }
