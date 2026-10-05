@@ -90,6 +90,13 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
 
     private void Rebuild() {
         if (_store is null) return;
+
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess()) {
+            dispatcher.Invoke(Rebuild);
+            return;
+        }
+
         var data = _store.Rebuild();
         Targets.Clear();
         foreach (var item in data) Targets.Add(item);
