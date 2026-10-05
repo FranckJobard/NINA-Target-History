@@ -7,11 +7,19 @@ using System.Windows.Forms;
 using NINA.TargetHistory.Models;
 using NINA.TargetHistory.Services;
 using NINA.Core.Utility;
+using NINA.Core.Enum;
+using NINA.Astrometry;
+using NINA.Profile.Interfaces;
+using NINA.WPF.Base.Interfaces.ViewModel;
+using NINA.WPF.Base.Interfaces.Mediator;
 
 namespace NINA.TargetHistory.ViewModels;
 
 public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable {
     private readonly PluginSettings _settings = new();
+    private readonly IProfileService _profileService;
+    private readonly IFramingAssistantVM _framingAssistantVM;
+    private readonly IApplicationMediator _applicationMediator;
     private HistoryStore? _store;
     private SequenceWatcher? _watcher;
     private string _search = "";
@@ -40,7 +48,11 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     public RelayCommand OpenAstroBinCommand { get; }
     public RelayCommand SaveMetadataCommand { get; }
 
-    public TargetHistoryViewModel(string ninaDefaultSequenceFolder) {
+    public TargetHistoryViewModel(IProfileService profileService, IFramingAssistantVM framingAssistantVM, IApplicationMediator applicationMediator) {
+        _profileService = profileService;
+        _framingAssistantVM = framingAssistantVM;
+        _applicationMediator = applicationMediator;
+        var ninaDefaultSequenceFolder = profileService.ActiveProfile.SequenceSettings.DefaultSequenceFolder;
         _settings.Load();
         if (string.IsNullOrWhiteSpace(SequenceFolder) && Directory.Exists(ninaDefaultSequenceFolder)) {
             SequenceFolder = Path.GetFullPath(ninaDefaultSequenceFolder);
@@ -129,6 +141,24 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         foreach (var item in Targets.Where(Filter).OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)) {
             if (item.TotalSeconds > 0) ImagedTargets.Add(item);
             else PlannedTargets.Add(item);
+        }
+    }
+
+    public async void OpenTargetInFraming(TargetHistoryItem target) {
+        if (target is null) return;
+        try {
+            var coordinates = new Coordinates(target.RaDegrees, target.DecDegrees, Epoch.J2000, Coordinates.RAType.Degrees);
+            var dso = new DeepSkyObject(target.Name, coordinates, _profileService.ActiveProfile.AstrometrySettings.Horizon) {
+                RotationPositionAngle = target.PositionAngle
+            };
+
+            // Use N.I.N.A.'s own Framing Assistant pipeline. It already takes its
+            // camera width/height from FramingAssistantSettings, pixel size from
+            // CameraSettings and focal length from TelescopeSettings.
+            _applicationMediator.ChangeTab(ApplicationTab.FRAMINGASSISTANT);
+            await _framingAssistantVM.SetCoordinates(dso);
+        } catch (Exception ex) {
+            Logger.Error(ex);
         }
     }
 
