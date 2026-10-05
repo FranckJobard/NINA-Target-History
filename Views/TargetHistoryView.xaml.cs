@@ -1,4 +1,6 @@
+using System;
 using System.Windows;
+using System.Windows.Threading;
 using NINA.TargetHistory.ViewModels;
 
 namespace NINA.TargetHistory.Views;
@@ -12,16 +14,21 @@ public partial class TargetHistoryView : System.Windows.Controls.UserControl {
     }
 
     private void TargetHistoryView_Loaded(object sender, RoutedEventArgs e) {
-        TryInitialize();
+        QueueInitialization();
     }
 
     private void TargetHistoryView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e) {
-        if (IsLoaded) TryInitialize();
+        if (IsLoaded) QueueInitialization();
     }
 
-    private void TryInitialize() {
-        if (_initialized || DataContext is not TargetHistoryViewModel vm) return;
-        _initialized = true;
-        vm.RefreshAfterViewLoaded();
+    private void QueueInitialization() {
+        if (_initialized) return;
+
+        // Run after N.I.N.A. has completed binding/layout of the dockable.
+        Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
+            if (_initialized || DataContext is not TargetHistoryViewModel vm) return;
+            _initialized = true;
+            vm.RefreshAfterViewLoaded();
+        }));
     }
 }
