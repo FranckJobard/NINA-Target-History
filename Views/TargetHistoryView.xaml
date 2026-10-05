@@ -41,7 +41,7 @@
   <DataGrid Grid.Row="2" Margin="0,22,0,0" ItemsSource="{Binding ImagedTargets}" AutoGenerateColumns="False"
             IsReadOnly="False" CanUserAddRows="False" HeadersVisibility="Column"
             GridLinesVisibility="Horizontal" SelectionMode="Single" VerticalContentAlignment="Center"
-            RowHeight="24" MouseDoubleClick="TargetGrid_MouseDoubleClick">
+            RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick">
    <DataGrid.Resources>
     <Style TargetType="{x:Type DataGridCell}"><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
    </DataGrid.Resources>
@@ -100,7 +100,7 @@
   <DataGrid Grid.Row="4" ItemsSource="{Binding PlannedTargets}" AutoGenerateColumns="False"
             IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column"
             GridLinesVisibility="Horizontal" SelectionMode="Single"
-            VerticalContentAlignment="Center" RowHeight="24">
+            VerticalContentAlignment="Center" RowHeight="18">
    <DataGrid.Resources>
     <Style TargetType="{x:Type DataGridCell}">
      <Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
