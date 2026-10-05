@@ -24,7 +24,13 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         get {
             if (_view is null) {
                 _view = CreateView();
-                if (_store is not null) Rebuild();
+                if (_store is not null) {
+                    var dispatcher = System.Windows.Application.Current?.Dispatcher;
+                    if (dispatcher is not null)
+                        dispatcher.BeginInvoke(new Action(Rebuild), System.Windows.Threading.DispatcherPriority.Loaded);
+                    else
+                        Rebuild();
+                }
             }
             return _view;
         }
