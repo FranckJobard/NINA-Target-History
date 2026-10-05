@@ -40,11 +40,9 @@
   <TextBlock Grid.Row="2" Text="Imaged targets" FontWeight="Bold" Margin="0,0,0,4"/>
   <DataGrid Grid.Row="2" Margin="0,22,0,0" ItemsSource="{Binding ImagedTargets}" AutoGenerateColumns="False"
             IsReadOnly="False" CanUserAddRows="False" HeadersVisibility="Column"
-            GridLinesVisibility="Horizontal" SelectionMode="Single" VerticalContentAlignment="Center"
-            RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick">
+            GridLinesVisibility="None" SelectionMode="Single" VerticalContentAlignment="Center"
+            RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick" SelectionChanged="TargetGrid_SelectionChanged">
    <DataGrid.Resources>
-    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
-    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent"/>
     <Style TargetType="{x:Type DataGridCell}"><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
    </DataGrid.Resources>
    <DataGrid.Columns>
@@ -101,11 +99,9 @@
   <TextBlock Grid.Row="3" Text="Planned targets" FontWeight="Bold" Margin="0,10,0,4"/>
   <DataGrid Grid.Row="4" ItemsSource="{Binding PlannedTargets}" AutoGenerateColumns="False"
             IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column"
-            GridLinesVisibility="Horizontal" SelectionMode="Single"
-            VerticalContentAlignment="Center" RowHeight="18">
+            GridLinesVisibility="None" SelectionMode="Single"
+            VerticalContentAlignment="Center" RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick" SelectionChanged="TargetGrid_SelectionChanged">
    <DataGrid.Resources>
-    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
-    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent"/>
     <Style TargetType="{x:Type DataGridCell}">
      <Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
     </Style>
