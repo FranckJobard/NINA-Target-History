@@ -16,6 +16,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     private SequenceWatcher? _watcher;
     private string _search = "";
     private string _status = "All";
+    private readonly object _targetsSync = new();
 
     public ObservableCollection<TargetHistoryItem> Targets { get; } = new();
     public ICollectionView View { get; }
@@ -42,6 +43,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
 
     public TargetHistoryViewModel() {
         _settings.Load();
+        System.Windows.Data.BindingOperations.EnableCollectionSynchronization(Targets, _targetsSync);
         View = CollectionViewSource.GetDefaultView(Targets);
         View.Filter = Filter;
         View.SortDescriptions.Add(new SortDescription(nameof(TargetHistoryItem.Name), ListSortDirection.Ascending));
@@ -98,8 +100,10 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         }
 
         var data = _store.Rebuild();
-        Targets.Clear();
-        foreach (var item in data) Targets.Add(item);
+        lock (_targetsSync) {
+            Targets.Clear();
+            foreach (var item in data) Targets.Add(item);
+        }
         View.Refresh();
     }
 
