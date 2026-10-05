@@ -29,7 +29,8 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path package
-          Copy-Item "bin\Release\net8.0-windows7.0\*" package -Recurse
+          Copy-Item "bin\Release\net8.0-windows7.0\NINA.TargetHistory.dll" package
+          if (Test-Path "bin\Release\net8.0-windows7.0\NINA.TargetHistory.pdb") { Copy-Item "bin\Release\net8.0-windows7.0\NINA.TargetHistory.pdb" package }
 
       - name: Upload Target History
         uses: actions/upload-artifact@v4
