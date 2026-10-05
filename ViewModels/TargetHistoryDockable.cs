@@ -15,7 +15,7 @@ public sealed class TargetHistoryDockable : DockableVM, IDisposable {
     [ImportingConstructor]
     public TargetHistoryDockable(IProfileService profileService) : base(profileService) {
         Title = "Target History";
-        History = new TargetHistoryViewModel();
+        History = new TargetHistoryViewModel(profileService.ActiveProfile.SequenceSettings.DefaultSequenceFolder);
 
         // Dedicated Target History icon: clock/history symbol, with no external resource dependency.
         var icon = new System.Windows.Media.GeometryGroup();

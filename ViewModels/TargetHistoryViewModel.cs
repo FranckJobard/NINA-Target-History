@@ -40,8 +40,13 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     public RelayCommand OpenAstroBinCommand { get; }
     public RelayCommand SaveMetadataCommand { get; }
 
-    public TargetHistoryViewModel() {
+    public TargetHistoryViewModel(string ninaDefaultSequenceFolder) {
         _settings.Load();
+        if (string.IsNullOrWhiteSpace(SequenceFolder) && Directory.Exists(ninaDefaultSequenceFolder)) {
+            SequenceFolder = Path.GetFullPath(ninaDefaultSequenceFolder);
+            _settings.Save();
+            Logger.Info($"Target History startup: adopted N.I.N.A. profile sequence folder='{SequenceFolder}'");
+        }
         BrowseCommand = new RelayCommand(_ => Browse());
         RefreshCommand = new RelayCommand(_ => Rebuild());
         OpenAstroBinCommand = new RelayCommand(OpenAstroBin);
