@@ -42,7 +42,7 @@
             IsReadOnly="False" CanUserAddRows="False" HeadersVisibility="Column"
             GridLinesVisibility="Horizontal" SelectionMode="Single" VerticalContentAlignment="Center">
    <DataGrid.Resources>
-    <Style TargetType="{x:Type DataGridCell}"><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+    <Style TargetType="{x:Type DataGridCell}"><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Center"/></Style>
    </DataGrid.Resources>
    <DataGrid.Columns>
     <DataGridTextColumn Header="Target" Binding="{Binding Name}" IsReadOnly="True" Width="2*"/>
@@ -67,7 +67,15 @@
      </DataGridTemplateColumn.CellTemplate>
     </DataGridTemplateColumn>
     <DataGridTextColumn Header="Total" Binding="{Binding TotalDisplay}" IsReadOnly="True" Width="90"/>
-    <DataGridCheckBoxColumn Header="Finished" Binding="{Binding Finished, Mode=TwoWay}" Width="75"/>
+    <DataGridTemplateColumn Header="Finished" Width="75">
+     <DataGridTemplateColumn.CellTemplate>
+      <DataTemplate>
+       <CheckBox IsChecked="{Binding Finished, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Focusable="False"/>
+      </DataTemplate>
+     </DataGridTemplateColumn.CellTemplate>
+    </DataGridTemplateColumn>
     <DataGridTextColumn Header="Link" Binding="{Binding AstroBinUrl, Mode=TwoWay}" Width="2*"/>
     <DataGridTemplateColumn Header="" Width="70">
      <DataGridTemplateColumn.CellTemplate>
@@ -87,7 +95,7 @@
             VerticalContentAlignment="Center">
    <DataGrid.Resources>
     <Style TargetType="{x:Type DataGridCell}">
-     <Setter Property="VerticalContentAlignment" Value="Center"/>
+     <Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Center"/>
     </Style>
    </DataGrid.Resources>
    <DataGrid.Columns>
