@@ -32,14 +32,6 @@ public sealed class TargetHistoryDockable : DockableVM, IDisposable {
         icon.Freeze();
         ImageGeometry = icon;
 
-        // Initialize the history from N.I.N.A.'s UI dispatcher instead of relying
-        // on the view's Loaded/DataContext event ordering.
-        var dispatcher = System.Windows.Application.Current?.Dispatcher;
-        if (dispatcher is not null) {
-            dispatcher.BeginInvoke(
-                System.Windows.Threading.DispatcherPriority.Loaded,
-                new Action(History.RefreshAfterViewLoaded));
-        }
     }
 
     public void Dispose() => History.Dispose();
