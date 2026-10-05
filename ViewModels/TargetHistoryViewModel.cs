@@ -20,7 +20,15 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     private ICollectionView? _view;
 
     public ObservableCollection<TargetHistoryItem> Targets { get; } = new();
-    public ICollectionView View => _view ??= CreateView();
+    public ICollectionView View {
+        get {
+            if (_view is null) {
+                _view = CreateView();
+                if (_store is not null) Rebuild();
+            }
+            return _view;
+        }
+    }
 
     public string Search {
         get => _search;
