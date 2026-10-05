@@ -17,9 +17,10 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     private string _search = "";
     private string _status = "All";
     private readonly object _targetsSync = new();
+    private ICollectionView? _view;
 
     public ObservableCollection<TargetHistoryItem> Targets { get; } = new();
-    public ICollectionView View { get; }
+    public ICollectionView View => _view ??= CreateView();
 
     public string Search {
         get => _search;
@@ -43,11 +44,6 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
 
     public TargetHistoryViewModel() {
         _settings.Load();
-        System.Windows.Data.BindingOperations.EnableCollectionSynchronization(Targets, _targetsSync);
-        View = CollectionViewSource.GetDefaultView(Targets);
-        View.Filter = Filter;
-        View.SortDescriptions.Add(new SortDescription(nameof(TargetHistoryItem.Name), ListSortDirection.Ascending));
-
         BrowseCommand = new RelayCommand(_ => Browse());
         RefreshCommand = new RelayCommand(_ => Rebuild());
         OpenAstroBinCommand = new RelayCommand(OpenAstroBin);
@@ -55,6 +51,14 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
 
         if (Directory.Exists(SequenceFolder))
             Attach(SequenceFolder);
+    }
+
+    private ICollectionView CreateView() {
+        BindingOperations.EnableCollectionSynchronization(Targets, _targetsSync);
+        var view = CollectionViewSource.GetDefaultView(Targets);
+        view.Filter = Filter;
+        view.SortDescriptions.Add(new SortDescription(nameof(TargetHistoryItem.Name), ListSortDirection.Ascending));
+        return view;
     }
 
     private bool Filter(object obj) {
@@ -104,7 +108,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             Targets.Clear();
             foreach (var item in data) Targets.Add(item);
         }
-        View.Refresh();
+        _view?.Refresh();
     }
 
     private static void OpenAstroBin(object? parameter) {
