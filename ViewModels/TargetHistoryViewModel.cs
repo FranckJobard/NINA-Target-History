@@ -3,7 +3,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Windows.Data;
 using System.Windows.Forms;
 using NINA.TargetHistory.Models;
 using NINA.TargetHistory.Services;
@@ -16,22 +15,18 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     private SequenceWatcher? _watcher;
     private string _search = "";
     private string _status = "All";
-    private readonly object _targetsSync = new();
-    private ICollectionView? _imagedView;
-    private ICollectionView? _plannedView;
-
     public ObservableCollection<TargetHistoryItem> Targets { get; } = new();
-    public ICollectionView ImagedView => _imagedView ??= CreateView(true);
-    public ICollectionView PlannedView => _plannedView ??= CreateView(false);
+    public ObservableCollection<TargetHistoryItem> ImagedTargets { get; } = new();
+    public ObservableCollection<TargetHistoryItem> PlannedTargets { get; } = new();
 
     public string Search {
         get => _search;
-        set { if (Set(ref _search, value)) RefreshViews(); }
+        set { if (Set(ref _search, value)) PopulateVisibleLists(); }
     }
 
     public string Status {
         get => _status;
-        set { if (Set(ref _status, value)) RefreshViews(); }
+        set { if (Set(ref _status, value)) PopulateVisibleLists(); }
     }
 
     public string SequenceFolder {
@@ -53,15 +48,6 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
 
         // Do not scan or touch WPF collections here. N.I.N.A. can construct
         // dockables off the UI thread. Initialization is deferred until the view is Loaded.
-    }
-
-    private ICollectionView CreateView(bool imaged) {
-        BindingOperations.EnableCollectionSynchronization(Targets, _targetsSync);
-        var source = new CollectionViewSource { Source = Targets };
-        var view = source.View;
-        view.Filter = obj => obj is TargetHistoryItem item && (imaged ? item.TotalSeconds > 0 : item.TotalSeconds <= 0) && Filter(item);
-        view.SortDescriptions.Add(new SortDescription(nameof(TargetHistoryItem.Name), ListSortDirection.Ascending));
-        return view;
     }
 
     private bool Filter(object obj) {
@@ -105,15 +91,10 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             return;
         }
 
-        // Force both CollectionViews to be created on the WPF UI thread before
-        // any target collection changes occur.
-        _ = ImagedView;
-        _ = PlannedView;
-
         if (Directory.Exists(SequenceFolder)) {
             Attach(SequenceFolder);
         } else {
-            RefreshViews();
+            PopulateVisibleLists();
         }
     }
 
@@ -127,16 +108,18 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         }
 
         var data = _store.Rebuild();
-        lock (_targetsSync) {
-            Targets.Clear();
-            foreach (var item in data) Targets.Add(item);
-        }
-        RefreshViews();
+        Targets.Clear();
+        foreach (var item in data) Targets.Add(item);
+        PopulateVisibleLists();
     }
 
-    private void RefreshViews() {
-        _imagedView?.Refresh();
-        _plannedView?.Refresh();
+    private void PopulateVisibleLists() {
+        ImagedTargets.Clear();
+        PlannedTargets.Clear();
+        foreach (var item in Targets.Where(Filter).OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)) {
+            if (item.TotalSeconds > 0) ImagedTargets.Add(item);
+            else PlannedTargets.Add(item);
+        }
     }
 
     private static void OpenAstroBin(object? parameter) {
