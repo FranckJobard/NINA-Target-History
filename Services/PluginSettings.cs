@@ -18,8 +18,12 @@ public sealed class PluginSettings {
     public void Load() {
         try {
             if (!File.Exists(_path)) return;
-            var loaded = JsonSerializer.Deserialize<PluginSettingsDto>(File.ReadAllText(_path));
-            SequenceFolder = loaded?.SequenceFolder ?? "";
+            var json = File.ReadAllText(_path);
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("SequenceFolder", out var value)
+                || doc.RootElement.TryGetProperty("sequenceFolder", out value)) {
+                SequenceFolder = value.GetString() ?? "";
+            }
         } catch { }
     }
 
