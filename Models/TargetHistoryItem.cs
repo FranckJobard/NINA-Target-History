@@ -26,6 +26,6 @@ public static class TimeFormat {
         var ts = TimeSpan.FromSeconds(Math.Max(0, seconds));
         if (ts.TotalHours >= 1)
             return $"{(int)ts.TotalHours}h{ts.Minutes:00}";
-        return $"{ts.Minutes}m";
+        return $"{ts.Minutes}min";
     }
 }
