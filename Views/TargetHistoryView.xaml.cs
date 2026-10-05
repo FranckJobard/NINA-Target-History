@@ -24,9 +24,20 @@ public partial class TargetHistoryView : System.Windows.Controls.UserControl {
         if (IsLoaded) QueueInitialization();
     }
 
+    private bool _syncingSelection;
+
     private void TargetGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-        if (sender is DataGrid grid && grid.SelectedItems.Count > 0) {
-            grid.UnselectAll();
+        if (_syncingSelection || sender is not DataGrid grid || grid.SelectedItem is null) return;
+
+        try {
+            _syncingSelection = true;
+            if (ReferenceEquals(grid, ImagedTargetsGrid)) {
+                PlannedTargetsGrid.SelectedItem = null;
+            } else if (ReferenceEquals(grid, PlannedTargetsGrid)) {
+                ImagedTargetsGrid.SelectedItem = null;
+            }
+        } finally {
+            _syncingSelection = false;
         }
     }
 
