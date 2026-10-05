@@ -80,7 +80,8 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         using var dialog = new FolderBrowserDialog {
             Description = "Select the N.I.N.A. sequences folder",
             UseDescriptionForTitle = true,
-            SelectedPath = Directory.Exists(SequenceFolder) ? SequenceFolder : ""
+            SelectedPath = Directory.Exists(SequenceFolder) ? SequenceFolder : "",
+            InitialDirectory = Directory.Exists(SequenceFolder) ? SequenceFolder : ""
         };
         if (dialog.ShowDialog() != DialogResult.OK) return;
         SequenceFolder = dialog.SelectedPath;
@@ -96,6 +97,8 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             System.Windows.Application.Current.Dispatcher.Invoke(Rebuild);
         Rebuild();
     }
+
+    public void RefreshAfterViewLoaded() => Rebuild();
 
     private void Rebuild() {
         if (_store is null) return;
