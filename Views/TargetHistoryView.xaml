@@ -41,11 +41,8 @@
   <DataGrid Grid.Row="2" Margin="0,22,0,0" ItemsSource="{Binding ImagedTargets}" AutoGenerateColumns="False"
             IsReadOnly="False" CanUserAddRows="False" HeadersVisibility="Column"
             GridLinesVisibility="Horizontal" SelectionMode="Single" VerticalContentAlignment="Center"
-            RowHeight="30">
+            RowHeight="30" MouseDoubleClick="TargetGrid_MouseDoubleClick">
    <DataGrid.Resources>
-    <Style TargetType="{x:Type DataGridRow}">
-     <EventSetter Event="MouseDoubleClick" Handler="TargetRow_MouseDoubleClick"/>
-    </Style>
     <Style TargetType="{x:Type DataGridCell}"><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
    </DataGrid.Resources>
    <DataGrid.Columns>
