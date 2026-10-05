@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using NINA.TargetHistory.Models;
 using NINA.TargetHistory.Services;
+using NINA.Core.Utility;
 
 namespace NINA.TargetHistory.ViewModels;
 
@@ -76,6 +77,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     }
 
     private void Attach(string folder) {
+        Logger.Info($"Target History startup: Attach('{folder}')");
         _watcher?.Dispose();
         _store = new HistoryStore(folder);
         _watcher = new SequenceWatcher(folder);
@@ -85,6 +87,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     }
 
     public void RefreshAfterViewLoaded() {
+        Logger.Info($"Target History startup: RefreshAfterViewLoaded; folder='{SequenceFolder}'; exists={Directory.Exists(SequenceFolder)}");
         var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher is not null && !dispatcher.CheckAccess()) {
             dispatcher.BeginInvoke(new Action(RefreshAfterViewLoaded));
@@ -108,9 +111,11 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         }
 
         var data = _store.Rebuild();
+        Logger.Info($"Target History startup: Rebuild returned {data.Count} targets");
         Targets.Clear();
         foreach (var item in data) Targets.Add(item);
         PopulateVisibleLists();
+        Logger.Info($"Target History startup: visible imaged={ImagedTargets.Count}, planned={PlannedTargets.Count}");
     }
 
     private void PopulateVisibleLists() {
