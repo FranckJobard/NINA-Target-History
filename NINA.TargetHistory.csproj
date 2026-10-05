@@ -21,6 +21,7 @@
     <Description>Historical target and exposure catalogue for N.I.N.A.</Description>
     <Platforms>AnyCPU;x64</Platforms>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GenerateAssemblyCompanyAttribute>true</GenerateAssemblyCompanyAttribute>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NINA.Plugin" Version="3.2.0.9001" />
