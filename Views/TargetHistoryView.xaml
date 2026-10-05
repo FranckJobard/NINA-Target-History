@@ -43,6 +43,9 @@
             GridLinesVisibility="Horizontal" SelectionMode="Single" VerticalContentAlignment="Center"
             RowHeight="30">
    <DataGrid.Resources>
+    <Style TargetType="{x:Type DataGridRow}">
+     <EventSetter Event="MouseDoubleClick" Handler="TargetRow_MouseDoubleClick"/>
+    </Style>
     <Style TargetType="{x:Type DataGridCell}"><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
    </DataGrid.Resources>
    <DataGrid.Columns>
