@@ -22,6 +22,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     private readonly IApplicationMediator _applicationMediator;
     private HistoryStore? _store;
     private SequenceWatcher? _watcher;
+    private readonly HistoricalFramingOverlay _historicalOverlay;
     private string _search = "";
     private string _status = "All";
     public ObservableCollection<TargetHistoryItem> Targets { get; } = new();
@@ -52,6 +53,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         _profileService = profileService;
         _framingAssistantVM = framingAssistantVM;
         _applicationMediator = applicationMediator;
+        _historicalOverlay = new HistoricalFramingOverlay(framingAssistantVM, () => Targets);
         var ninaDefaultSequenceFolder = profileService.ActiveProfile.SequenceSettings.DefaultSequenceFolder;
         _settings.Load();
         if (string.IsNullOrWhiteSpace(SequenceFolder) && Directory.Exists(ninaDefaultSequenceFolder)) {
@@ -136,6 +138,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             Targets.Add(item);
         }
         PopulateVisibleLists();
+        _historicalOverlay.Refresh();
         Logger.Info($"Target History startup: visible imaged={ImagedTargets.Count}, planned={PlannedTargets.Count}");
     }
 
@@ -168,6 +171,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             // CameraSettings and focal length from TelescopeSettings.
             _applicationMediator.ChangeTab(ApplicationTab.FRAMINGASSISTANT);
             await _framingAssistantVM.SetCoordinates(dso);
+            _historicalOverlay.Refresh();
         } catch (Exception ex) {
             Logger.Error(ex);
         }
@@ -184,6 +188,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         _store?.SaveMetadata(Targets);
         foreach (var item in Targets) item.PropertyChanged -= Target_PropertyChanged;
         _watcher?.Dispose();
+        _historicalOverlay.Dispose();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
