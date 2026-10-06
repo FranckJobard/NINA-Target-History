@@ -41,6 +41,13 @@ public partial class TargetHistoryView : System.Windows.Controls.UserControl {
         }
     }
 
+
+    private void ImagedTargetsGrid_Sorting(object sender, DataGridSortingEventArgs e) {
+        if (sender is DataGrid grid) {
+            grid.SelectedItem = null;
+        }
+    }
+
     private void TargetGrid_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) {
         if (sender is DataGrid grid && !grid.IsKeyboardFocusWithin) {
             grid.SelectedItem = null;
