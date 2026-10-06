@@ -50,7 +50,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     });
 
     private static void Dispatch(Action action) {
-        var dispatcher = Application.Current?.Dispatcher;
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher is null) return;
         if (dispatcher.CheckAccess()) action();
         else dispatcher.BeginInvoke(action, DispatcherPriority.Background);
@@ -58,7 +58,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
 
     private void Attach() {
         if (_overlay is not null && _host is not null) return;
-        var root = Application.Current?.MainWindow;
+        var root = System.Windows.Application.Current?.MainWindow;
         if (root is null) return;
         var canvas = FindFramingCanvas(root);
         if (canvas is null) return;
@@ -70,7 +70,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             Width = canvas.Width,
             Height = canvas.Height
         };
-        Panel.SetZIndex(_overlay, 20);
+        System.Windows.Controls.Panel.SetZIndex(_overlay, 20);
         canvas.Children.Add(_overlay);
     }
 
@@ -110,7 +110,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         var width = _framing.CameraWidth * cameraArcsecPerPixel / viewport.ArcSecWidth;
         var height = _framing.CameraHeight * cameraArcsecPerPixel / viewport.ArcSecHeight;
         var currentName = _framing.DSO?.Name ?? string.Empty;
-        var stroke = new SolidColorBrush(Color.FromRgb(102, 170, 112));
+        var stroke = new SolidColorBrush(System.Windows.Media.Color.FromRgb(102, 170, 112));
         stroke.Freeze();
 
         foreach (var target in _targets().Where(t => t.TotalSeconds > 0)) {
@@ -124,14 +124,14 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 || center.X - width / 2 > viewport.Width || center.Y - height / 2 > viewport.Height)
                 continue;
 
-            var rectangle = new Rectangle {
+            var rectangle = new System.Windows.Shapes.Rectangle {
                 Width = width,
                 Height = height,
                 Stroke = stroke,
                 StrokeThickness = 2,
-                Fill = Brushes.Transparent,
+                Fill = System.Windows.Media.Brushes.Transparent,
                 IsHitTestVisible = false,
-                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
                 RenderTransform = new RotateTransform(
                     AstroUtil.EuclidianModulus(360 - target.PositionAngle - viewport.Rotation, 360))
             };
