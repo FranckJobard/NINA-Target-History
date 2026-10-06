@@ -57,8 +57,6 @@ public partial class TargetHistoryView : System.Windows.Controls.UserControl {
                     => System.Windows.Media.VisualTreeHelper.GetParent(source),
                 FrameworkContentElement contentElement
                     => contentElement.Parent,
-                FrameworkElement frameworkElement
-                    => frameworkElement.Parent,
                 _ => null
             };
         }
