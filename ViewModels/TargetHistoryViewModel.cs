@@ -129,10 +129,21 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
 
         var data = _store.Rebuild();
         Logger.Info($"Target History startup: Rebuild returned {data.Count} targets");
+        foreach (var existing in Targets) existing.PropertyChanged -= Target_PropertyChanged;
         Targets.Clear();
-        foreach (var item in data) Targets.Add(item);
+        foreach (var item in data) {
+            item.PropertyChanged += Target_PropertyChanged;
+            Targets.Add(item);
+        }
         PopulateVisibleLists();
         Logger.Info($"Target History startup: visible imaged={ImagedTargets.Count}, planned={PlannedTargets.Count}");
+    }
+
+    private void Target_PropertyChanged(object? sender, PropertyChangedEventArgs e) {
+        if (e.PropertyName == nameof(TargetHistoryItem.Finished)) {
+            _store?.SaveMetadata(Targets);
+            if (Status != "All") PopulateVisibleLists();
+        }
     }
 
     private void PopulateVisibleLists() {
@@ -171,6 +182,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
 
     public void Dispose() {
         _store?.SaveMetadata(Targets);
+        foreach (var item in Targets) item.PropertyChanged -= Target_PropertyChanged;
         _watcher?.Dispose();
     }
 
