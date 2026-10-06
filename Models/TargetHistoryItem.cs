@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 
 namespace NINA.TargetHistory.Models;
 
-public sealed class TargetHistoryItem {
+public sealed class TargetHistoryItem : System.ComponentModel.INotifyPropertyChanged {
     public required string Name { get; init; }
     public double RaDegrees { get; set; }
     public double DecDegrees { get; set; }
@@ -11,8 +11,17 @@ public sealed class TargetHistoryItem {
     public ObservableCollection<FilterTotal> Filters { get; } = new();
     public double TotalSeconds => Filters.Sum(x => x.Seconds);
     public string TotalDisplay => TimeFormat.Format(TotalSeconds);
-    public bool Finished { get; set; }
+    private bool _finished;
+    public bool Finished {
+        get => _finished;
+        set {
+            if (_finished == value) return;
+            _finished = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(Finished)));
+        }
+    }
     public string? AstroBinUrl { get; set; }
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
 }
 
 public sealed class FilterTotal {
