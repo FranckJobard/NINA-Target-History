@@ -1,0 +1,15 @@
+<ResourceDictionary
+    x:Class="NINA.TargetHistory.Options"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DataTemplate x:Key="Target History_Options">
+        <StackPanel Orientation="Vertical" Margin="8">
+            <TextBlock Text="Target History" FontWeight="Bold" Margin="0,0,0,8"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Show historical fields" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <CheckBox IsChecked="{Binding ShowHistoricalFields, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          VerticalAlignment="Center"/>
+            </StackPanel>
+        </StackPanel>
+    </DataTemplate>
+</ResourceDictionary>

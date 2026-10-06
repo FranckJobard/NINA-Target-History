@@ -6,6 +6,8 @@ namespace NINA.TargetHistory.Services;
 public sealed class PluginSettings {
     private readonly string _path;
     public string SequenceFolder { get; set; } = "";
+    public bool ShowHistoricalFields { get; set; } = true;
+    public static event EventHandler? SettingsChanged;
 
     public PluginSettings() {
         var folder = Path.Combine(
@@ -24,16 +26,23 @@ public sealed class PluginSettings {
                 || doc.RootElement.TryGetProperty("sequenceFolder", out value)) {
                 SequenceFolder = value.GetString() ?? "";
             }
+            if (doc.RootElement.TryGetProperty("ShowHistoricalFields", out var showValue)
+                || doc.RootElement.TryGetProperty("showHistoricalFields", out showValue)) {
+                if (showValue.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                    ShowHistoricalFields = showValue.GetBoolean();
+            }
         } catch { }
     }
 
     public void Save() {
         File.WriteAllText(_path, JsonSerializer.Serialize(
-            new PluginSettingsDto { SequenceFolder = SequenceFolder },
+            new PluginSettingsDto { SequenceFolder = SequenceFolder, ShowHistoricalFields = ShowHistoricalFields },
             new JsonSerializerOptions { WriteIndented = true }));
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private sealed class PluginSettingsDto {
         public string SequenceFolder { get; set; } = "";
+        public bool ShowHistoricalFields { get; set; } = true;
     }
 }
