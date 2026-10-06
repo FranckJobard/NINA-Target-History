@@ -69,13 +69,26 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 return;
             }
 
-            var viewport = _framing.SkyMapAnnotator.ViewportFoV;
-            if (viewport is null || viewport.Width <= 0 || viewport.Height <= 0
-                || viewport.ArcSecWidth <= 0 || viewport.ArcSecHeight <= 0) {
+            var ninaViewport = _framing.SkyMapAnnotator.ViewportFoV;
+            if (ninaViewport is null || ninaViewport.Width <= 0 || ninaViewport.Height <= 0
+                || ninaViewport.ArcSecWidth <= 0 || ninaViewport.ArcSecHeight <= 0) {
                 ClearOverlay();
                 Diagnostic("waiting for SKYATLAS viewport");
                 return;
             }
+
+            // N.I.N.A. recalculates Rectangle.Coordinates whenever the SKYATLAS is
+            // dragged. Build a fresh viewport from that live framing center so our
+            // historical layer follows the sky rather than the originally selected target.
+            var liveCenter = _framing.RectangleCalculated && _framing.Rectangle?.Coordinates is not null
+                ? _framing.Rectangle.Coordinates
+                : ninaViewport.CenterCoordinates;
+            var viewport = new ViewportFoV(
+                liveCenter,
+                ninaViewport.VFoV,
+                ninaViewport.Width,
+                ninaViewport.Height,
+                ninaViewport.Rotation);
 
             if (!EnsureOverlayAttached()) {
                 Diagnostic("waiting for FramingAssistant SkyMap canvas");
@@ -121,7 +134,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                     IsHitTestVisible = false,
                     RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
                     RenderTransform = new RotateTransform(
-                        AstroUtil.EuclidianModulus(360d - target.PositionAngle - viewport.Rotation, 360d))
+                        CalculateSkyRotation(target, coordinates, center, viewport, scaleX, scaleY))
                 };
 
                 Canvas.SetLeft(rectangle, center.X - width / 2d);
@@ -134,6 +147,38 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         } catch (Exception ex) {
             Logger.Error(ex);
         }
+    }
+
+    private static double CalculateSkyRotation(
+        TargetHistoryItem target,
+        Coordinates coordinates,
+        System.Windows.Point center,
+        ViewportFoV viewport,
+        double scaleX,
+        double scaleY) {
+        // Follow the same sky-projection principle N.I.N.A. uses for oriented
+        // survey fields: the apparent orientation changes as a fixed celestial
+        // field moves across the projected viewport.
+        var dx = (center.X / scaleX) - viewport.ViewPortCenterPoint.X;
+        var dy = (center.Y / scaleY) - viewport.ViewPortCenterPoint.Y;
+        var reference = viewport.CenterCoordinates.Shift(
+            Math.Abs(dx) < 1E-10 ? 1d : 0d,
+            dy,
+            viewport.Rotation,
+            viewport.ArcSecWidth,
+            viewport.ArcSecHeight);
+
+        var projectedRotation = -(90d - AstroUtil.CalculatePositionAngle(
+            reference.RADegrees,
+            coordinates.RADegrees,
+            reference.Dec,
+            coordinates.Dec));
+
+        if (dx < 0) projectedRotation += 180d;
+        if (coordinates.Dec < 0 || (reference.Dec < 0 && coordinates.Dec >= 0))
+            projectedRotation += 180d;
+
+        return AstroUtil.EuclidianModulus(projectedRotation + target.PositionAngle, 360d);
     }
 
     private bool EnsureOverlayAttached() {
