@@ -145,10 +145,11 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                     Fill = System.Windows.Media.Brushes.Transparent,
                     IsHitTestVisible = false,
                     RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
-                    // First make anchoring identical to N.I.N.A.'s catalogue objects.
-                    // Orientation refinement comes after the sky anchoring is verified.
+                    // Match N.I.N.A.'s FramingDSO orientation logic: project the
+                    // target in the native sky viewport, then correct its stored
+                    // position angle for the local sky orientation at that point.
                     RenderTransform = new RotateTransform(
-                        AstroUtil.EuclidianModulus(360d - target.PositionAngle - viewport.Rotation, 360d))
+                        CalculateHistoricalFieldRotation(target, coordinates, center, viewport))
                 };
 
                 Canvas.SetLeft(rectangle, center.X - width / 2d);
@@ -161,6 +162,37 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         } catch (Exception ex) {
             Logger.Error(ex);
         }
+    }
+
+    private static double CalculateHistoricalFieldRotation(
+        TargetHistoryItem target,
+        Coordinates coordinates,
+        System.Windows.Point center,
+        ViewportFoV viewport) {
+        // This follows N.I.N.A. 3.2 FramingDSO.Draw: the apparent orientation
+        // changes with position in the projected sky map.
+        var panelDeltaX = center.X - viewport.ViewPortCenterPoint.X;
+        var panelDeltaY = center.Y - viewport.ViewPortCenterPoint.Y;
+        var referenceCenter = viewport.CenterCoordinates.Shift(
+            panelDeltaX < 1E-10 ? 1 : 0,
+            panelDeltaY,
+            viewport.Rotation,
+            viewport.ArcSecWidth,
+            viewport.ArcSecHeight);
+
+        // Sequence PositionAngle is the camera PA. N.I.N.A.'s DSO annotation
+        // convention uses 90 - PA before applying the local projection correction.
+        var angle = 90d - target.PositionAngle;
+        if (Math.Abs(viewport.CenterCoordinates.RA - coordinates.RA) > 1E-13
+            || Math.Abs(viewport.CenterCoordinates.Dec - coordinates.Dec) > 1E-13) {
+            angle -= 90d - AstroUtil.CalculatePositionAngle(
+                referenceCenter.RADegrees,
+                coordinates.RADegrees,
+                referenceCenter.Dec,
+                coordinates.Dec);
+        }
+
+        return angle;
     }
 
     private bool EnsureOverlayAttached() {
