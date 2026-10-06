@@ -100,7 +100,7 @@
   <DataGrid x:Name="PlannedTargetsGrid" Grid.Row="4" ItemsSource="{Binding PlannedTargets}" AutoGenerateColumns="False"
             IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column"
             GridLinesVisibility="None" SelectionMode="Single"
-            VerticalContentAlignment="Center" RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick" SelectionChanged="TargetGrid_SelectionChanged" LostKeyboardFocus="TargetGrid_LostKeyboardFocus">
+            VerticalContentAlignment="Center" RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick" SelectionChanged="TargetGrid_SelectionChanged" LostKeyboardFocus="TargetGrid_LostKeyboardFocus" Sorting="ImagedTargetsGrid_Sorting">
    <DataGrid.Resources>
     <Style TargetType="{x:Type DataGridCell}">
      <Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
