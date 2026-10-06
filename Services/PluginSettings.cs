@@ -6,7 +6,7 @@ namespace NINA.TargetHistory.Services;
 public sealed class PluginSettings {
     private readonly string _path;
     public string SequenceFolder { get; set; } = "";
-    public bool ShowHistoricalFields { get; set; } = true;
+    public bool ShowHistoricalFields { get; set; } = false;
     public static event EventHandler? SettingsChanged;
 
     public PluginSettings() {
@@ -43,6 +43,6 @@ public sealed class PluginSettings {
 
     private sealed class PluginSettingsDto {
         public string SequenceFolder { get; set; } = "";
-        public bool ShowHistoricalFields { get; set; } = true;
+        public bool ShowHistoricalFields { get; set; } = false;
     }
 }
