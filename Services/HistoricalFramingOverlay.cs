@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -27,6 +28,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private readonly PluginSettings _settings = new();
     private readonly DispatcherTimer _refreshTimer;
     private Canvas? _overlay;
+    private INotifyPropertyChanged? _skyMapNotifier;
     private string _lastDiagnostic = "";
 
     public HistoricalFramingOverlay(IFramingAssistantVM framing, Func<IEnumerable<TargetHistoryItem>> targets) {
@@ -34,6 +36,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         _targets = targets;
         _settings.Load();
         PluginSettings.SettingsChanged += SettingsChanged;
+        AttachSkyMapRedrawListener();
 
         _refreshTimer = new DispatcherTimer(DispatcherPriority.Render) {
             Interval = TimeSpan.FromMilliseconds(250)
@@ -47,7 +50,27 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         Refresh();
     }
 
-    private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshCore();
+    private void RefreshTimer_Tick(object? sender, EventArgs e) {
+        AttachSkyMapRedrawListener();
+        RefreshCore();
+    }
+
+    private void AttachSkyMapRedrawListener() {
+        if (_skyMapNotifier is not null) return;
+        if (_framing.SkyMapAnnotator is INotifyPropertyChanged notifier) {
+            _skyMapNotifier = notifier;
+            _skyMapNotifier.PropertyChanged += SkyMapAnnotator_PropertyChanged;
+        }
+    }
+
+    private void SkyMapAnnotator_PropertyChanged(object? sender, PropertyChangedEventArgs e) {
+        // N.I.N.A. publishes a new SkyMapOverlay after it has shifted/rebuilt the
+        // viewport. Redraw Target History at that exact point, just like the
+        // catalogue/grid render cycle, instead of merely polling the UI.
+        if (e.PropertyName == nameof(ISkyMapAnnotator.SkyMapOverlay)) {
+            Refresh();
+        }
+    }
 
     public void Refresh() {
         var dispatcher = System.Windows.Application.Current?.Dispatcher;
@@ -122,8 +145,10 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                     Fill = System.Windows.Media.Brushes.Transparent,
                     IsHitTestVisible = false,
                     RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
+                    // First make anchoring identical to N.I.N.A.'s catalogue objects.
+                    // Orientation refinement comes after the sky anchoring is verified.
                     RenderTransform = new RotateTransform(
-                        CalculateSkyRotation(target, coordinates, center, viewport, scaleX, scaleY))
+                        AstroUtil.EuclidianModulus(360d - target.PositionAngle - viewport.Rotation, 360d))
                 };
 
                 Canvas.SetLeft(rectangle, center.X - width / 2d);
@@ -136,38 +161,6 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         } catch (Exception ex) {
             Logger.Error(ex);
         }
-    }
-
-    private static double CalculateSkyRotation(
-        TargetHistoryItem target,
-        Coordinates coordinates,
-        System.Windows.Point center,
-        ViewportFoV viewport,
-        double scaleX,
-        double scaleY) {
-        // Follow the same sky-projection principle N.I.N.A. uses for oriented
-        // survey fields: the apparent orientation changes as a fixed celestial
-        // field moves across the projected viewport.
-        var dx = (center.X / scaleX) - viewport.ViewPortCenterPoint.X;
-        var dy = (center.Y / scaleY) - viewport.ViewPortCenterPoint.Y;
-        var reference = viewport.CenterCoordinates.Shift(
-            Math.Abs(dx) < 1E-10 ? 1d : 0d,
-            dy,
-            viewport.Rotation,
-            viewport.ArcSecWidth,
-            viewport.ArcSecHeight);
-
-        var projectedRotation = -(90d - AstroUtil.CalculatePositionAngle(
-            reference.RADegrees,
-            coordinates.RADegrees,
-            reference.Dec,
-            coordinates.Dec));
-
-        if (dx < 0) projectedRotation += 180d;
-        if (coordinates.Dec < 0 || (reference.Dec < 0 && coordinates.Dec >= 0))
-            projectedRotation += 180d;
-
-        return AstroUtil.EuclidianModulus(projectedRotation + target.PositionAngle, 360d);
     }
 
     private bool EnsureOverlayAttached() {
@@ -237,6 +230,10 @@ public sealed class HistoricalFramingOverlay : IDisposable {
 
     public void Dispose() {
         PluginSettings.SettingsChanged -= SettingsChanged;
+        if (_skyMapNotifier is not null) {
+            _skyMapNotifier.PropertyChanged -= SkyMapAnnotator_PropertyChanged;
+            _skyMapNotifier = null;
+        }
         _refreshTimer.Stop();
         _refreshTimer.Tick -= RefreshTimer_Tick;
         if (_overlay?.Parent is System.Windows.Controls.Panel parent) parent.Children.Remove(_overlay);
