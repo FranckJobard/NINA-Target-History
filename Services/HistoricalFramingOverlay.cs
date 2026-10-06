@@ -50,7 +50,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private void RefreshTimer_Tick(object? sender, EventArgs e) => RefreshCore();
 
     public void Refresh() {
-        var dispatcher = Application.Current?.Dispatcher;
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher is null) return;
         if (dispatcher.CheckAccess()) RefreshCore();
         else dispatcher.BeginInvoke(RefreshCore, DispatcherPriority.Render);
@@ -109,14 +109,14 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                     continue;
                 }
 
-                var rectangle = new Rectangle {
+                var rectangle = new System.Windows.Shapes.Rectangle {
                     Width = width,
                     Height = height,
-                    Stroke = Brushes.White,
+                    Stroke = System.Windows.Media.Brushes.White,
                     StrokeThickness = 2,
-                    Fill = Brushes.Transparent,
+                    Fill = System.Windows.Media.Brushes.Transparent,
                     IsHitTestVisible = false,
-                    RenderTransformOrigin = new Point(0.5, 0.5),
+                    RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
                     RenderTransform = new RotateTransform(
                         AstroUtil.EuclidianModulus(360d - target.PositionAngle - viewport.Rotation, 360d))
                 };
@@ -134,9 +134,9 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     }
 
     private bool EnsureOverlayAttached() {
-        if (_overlay?.Parent is Panel) return true;
+        if (_overlay?.Parent is System.Windows.Controls.Panel) return true;
 
-        foreach (Window window in Application.Current.Windows) {
+        foreach (System.Windows.Window window in System.Windows.Application.Current.Windows) {
             var framingView = FindDescendant(window, d =>
                 string.Equals(d.GetType().FullName, "NINA.View.FramingAssistantView", StringComparison.Ordinal));
             if (framingView is null) continue;
@@ -159,10 +159,10 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 Tag = OverlayTag,
                 IsHitTestVisible = false,
                 ClipToBounds = true,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
+                VerticalAlignment = System.Windows.VerticalAlignment.Top
             };
-            Panel.SetZIndex(_overlay, 1000);
+            System.Windows.Controls.Panel.SetZIndex(_overlay, 1000);
             parentCanvas.Children.Add(_overlay);
             return true;
         }
@@ -194,7 +194,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         PluginSettings.SettingsChanged -= SettingsChanged;
         _refreshTimer.Stop();
         _refreshTimer.Tick -= RefreshTimer_Tick;
-        if (_overlay?.Parent is Panel parent) parent.Children.Remove(_overlay);
+        if (_overlay?.Parent is System.Windows.Controls.Panel parent) parent.Children.Remove(_overlay);
         _overlay = null;
     }
 }
