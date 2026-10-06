@@ -82,10 +82,12 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 return;
             }
 
-            var hostWidth = _overlay!.ActualWidth > 0 ? _overlay.ActualWidth : viewport.Width;
-            var hostHeight = _overlay.ActualHeight > 0 ? _overlay.ActualHeight : viewport.Height;
-            var scaleX = hostWidth / viewport.Width;
-            var scaleY = hostHeight / viewport.Height;
+            // This canvas lives in the exact same native-pixel coordinate space as
+            // SkyMapAnnotator.SkyMapOverlay. ImageView/Viewbox performs display scaling.
+            var hostWidth = viewport.Width;
+            var hostHeight = viewport.Height;
+            var scaleX = 1d;
+            var scaleY = 1d;
             _overlay.Children.Clear();
 
             var native = _framing.CameraRectangles.FirstOrDefault();
@@ -203,12 +205,8 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
                 VerticalAlignment = System.Windows.VerticalAlignment.Top
             };
-            _overlay.SetBinding(FrameworkElement.WidthProperty, new System.Windows.Data.Binding("ActualWidth") {
-                Source = skyImage
-            });
-            _overlay.SetBinding(FrameworkElement.HeightProperty, new System.Windows.Data.Binding("ActualHeight") {
-                Source = skyImage
-            });
+            _overlay.Width = _framing.SkyMapAnnotator.ViewportFoV?.Width ?? skyImage.ActualWidth;
+            _overlay.Height = _framing.SkyMapAnnotator.ViewportFoV?.Height ?? skyImage.ActualHeight;
             System.Windows.Controls.Panel.SetZIndex(_overlay, 1000);
             skyCanvas.Children.Add(_overlay);
             return true;
