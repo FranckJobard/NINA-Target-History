@@ -107,7 +107,10 @@
     </Style>
    </DataGrid.Resources>
    <DataGrid.Columns>
-    <DataGridTextColumn Header="Target" Binding="{Binding Name}" Width="2*">
+    <DataGridTextColumn Header="Target" Binding="{Binding Name}" SortMemberPath="Name" Width="2*">
+     <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/></Style></DataGridTextColumn.ElementStyle>
+    </DataGridTextColumn>
+    <DataGridTextColumn Header="Date" Binding="{Binding MostRecentSequenceUtc, StringFormat={}{0:yyyy-MM-dd}}" SortMemberPath="MostRecentSequenceUtc" Width="110">
      <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/></Style></DataGridTextColumn.ElementStyle>
     </DataGridTextColumn>
    </DataGrid.Columns>
