@@ -1,183 +1,140 @@
-using System.ComponentModel;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using NINA.Astrometry;
 using NINA.Core.Enum;
 using NINA.Core.Utility;
 using NINA.TargetHistory.Models;
 using NINA.WPF.Base.Interfaces.ViewModel;
+using NINA.WPF.Base.SkySurvey;
 
 namespace NINA.TargetHistory.Services;
 
+/// <summary>
+/// Adds historical fields as native N.I.N.A. FramingRectangle instances.
+/// N.I.N.A. owns the rendering, so historical fields use the same white
+/// rectangle appearance as normal Framing Assistant panels.
+/// </summary>
 public sealed class HistoricalFramingOverlay : IDisposable {
+    private const string HistoryPrefix = "__TargetHistory__:";
     private readonly IFramingAssistantVM _framing;
     private readonly Func<IEnumerable<TargetHistoryItem>> _targets;
     private readonly PluginSettings _settings = new();
-    private Canvas? _host;
-    private Canvas? _overlay;
-    private INotifyPropertyChanged? _annotatorNotifier;
-    private readonly DispatcherTimer _attachTimer;
+    private readonly DispatcherTimer _refreshTimer;
+    private bool _updating;
 
     public HistoricalFramingOverlay(IFramingAssistantVM framing, Func<IEnumerable<TargetHistoryItem>> targets) {
         _framing = framing;
         _targets = targets;
         _settings.Load();
         PluginSettings.SettingsChanged += SettingsChanged;
-        HookAnnotator();
 
-        // The Framing Assistant visual tree is created lazily after the tab is selected.
-        // Keep trying on the UI dispatcher so an early OpenTarget call cannot silently miss it.
-        _attachTimer = new DispatcherTimer(DispatcherPriority.Background) {
-            Interval = TimeSpan.FromMilliseconds(400)
+        // FramingAssistantVM recalculates (and clears) CameraRectangles when the
+        // sky is panned/zoomed. Re-apply our native rectangles after that work.
+        _refreshTimer = new DispatcherTimer(DispatcherPriority.Background) {
+            Interval = TimeSpan.FromMilliseconds(500)
         };
-        _attachTimer.Tick += AttachTimer_Tick;
-        _attachTimer.Start();
-    }
-
-    private void AttachTimer_Tick(object? sender, EventArgs e) {
-        if (!_settings.ShowHistoricalFields) {
-            if (_overlay is not null) _overlay.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        Attach();
-        if (_overlay is not null) {
-            _overlay.Visibility = Visibility.Visible;
-            Render();
-        }
-    }
-
-    private void HookAnnotator() {
-        _annotatorNotifier = _framing.SkyMapAnnotator as INotifyPropertyChanged;
-        if (_annotatorNotifier is not null)
-            _annotatorNotifier.PropertyChanged += AnnotatorPropertyChanged;
+        _refreshTimer.Tick += RefreshTimer_Tick;
+        _refreshTimer.Start();
     }
 
     private void SettingsChanged(object? sender, EventArgs e) {
         _settings.Load();
-        Dispatch(Render);
+        Refresh();
     }
 
-    private void AnnotatorPropertyChanged(object? sender, PropertyChangedEventArgs e) {
-        if (e.PropertyName == nameof(_framing.SkyMapAnnotator.SkyMapOverlay))
-            Dispatch(Render);
+    private void RefreshTimer_Tick(object? sender, EventArgs e) {
+        RefreshCore();
     }
 
-    public void Refresh() => Dispatch(() => {
-        Attach();
-        Render();
-    });
-
-    private static void Dispatch(Action action) {
+    public void Refresh() {
         var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher is null) return;
-        if (dispatcher.CheckAccess()) action();
-        else dispatcher.BeginInvoke(action, DispatcherPriority.Background);
+        if (dispatcher.CheckAccess()) RefreshCore();
+        else dispatcher.BeginInvoke(RefreshCore, DispatcherPriority.Background);
     }
 
-    private void Attach() {
-        if (_overlay is not null && _host is not null) return;
-        var root = System.Windows.Application.Current?.MainWindow;
-        if (root is null) return;
-        var canvas = FindFramingCanvas(root);
-        if (canvas is null) return;
+    private void RefreshCore() {
+        if (_updating) return;
+        _updating = true;
+        try {
+            RemoveHistoricalRectangles();
+            if (!_settings.ShowHistoricalFields) return;
+            if (_framing.FramingAssistantSource != SkySurveySource.SKYATLAS) return;
 
-        _host = canvas;
-        _overlay = new Canvas {
-            IsHitTestVisible = false,
-            ClipToBounds = true,
-            Width = canvas.Width,
-            Height = canvas.Height
-        };
-        System.Windows.Controls.Panel.SetZIndex(_overlay, 20);
-        canvas.Children.Add(_overlay);
-    }
+            // Do not interfere with a mosaic currently being designed by the user.
+            // A 1x1 framing is the safe historical-overlay case.
+            if (_framing.HorizontalPanels != 1 || _framing.VerticalPanels != 1) return;
 
-    private Canvas? FindFramingCanvas(DependencyObject root) {
-        var count = VisualTreeHelper.GetChildrenCount(root);
-        for (var i = 0; i < count; i++) {
-            var child = VisualTreeHelper.GetChild(root, i);
-            if (child is Canvas canvas
-                && ReferenceEquals(canvas.DataContext, _framing)
-                && canvas.Children.OfType<FrameworkElement>().Any(x => x.GetType().Name == "SkyMapOverlayView")) {
-                return canvas;
+            var viewport = _framing.SkyMapAnnotator.ViewportFoV;
+            if (viewport is null || viewport.Width <= 0 || viewport.Height <= 0
+                || viewport.ArcSecWidth <= 0 || viewport.ArcSecHeight <= 0) return;
+            if (_framing.CameraWidth <= 0 || _framing.CameraHeight <= 0
+                || _framing.CameraPixelSize <= 0 || _framing.FocalLength <= 0) return;
+
+            var arcsecPerPixel = AstroUtil.ArcsecPerPixel(_framing.CameraPixelSize, _framing.FocalLength);
+            var width = _framing.CameraWidth * arcsecPerPixel / viewport.ArcSecWidth;
+            var height = _framing.CameraHeight * arcsecPerPixel / viewport.ArcSecHeight;
+            var currentName = _framing.DSO?.Name ?? string.Empty;
+            var parentRotation = _framing.Rectangle?.Rotation ?? 0d;
+
+            foreach (var target in _targets().Where(t => t.TotalSeconds > 0)) {
+                if (!string.IsNullOrWhiteSpace(currentName)
+                    && string.Equals(target.Name, currentName, StringComparison.OrdinalIgnoreCase)) {
+                    continue;
+                }
+
+                var coordinates = new Coordinates(
+                    target.RaDegrees, target.DecDegrees, Epoch.J2000, Coordinates.RAType.Degrees);
+                var center = coordinates.XYProjection(viewport);
+
+                if (center.X + width / 2 < 0 || center.Y + height / 2 < 0
+                    || center.X - width / 2 > viewport.Width || center.Y - height / 2 > viewport.Height) {
+                    continue;
+                }
+
+                // CameraRectangles are rendered inside an ItemsControl which N.I.N.A.
+                // rotates by Rectangle.Rotation. Compensate that parent rotation and
+                // preserve the PositionAngle stored in the historical sequence.
+                var screenRotation = AstroUtil.EuclidianModulus(
+                    360 - target.PositionAngle - viewport.Rotation, 360);
+                var rectangleRotation = AstroUtil.EuclidianModulus(
+                    screenRotation - parentRotation, 360);
+
+                var rect = new FramingRectangle(
+                    viewport.Rotation,
+                    center.X - width / 2,
+                    center.Y - height / 2,
+                    width,
+                    height) {
+                    Id = 0, // N.I.N.A. hides the panel number for Id=0
+                    Name = HistoryPrefix + target.Name,
+                    Rotation = rectangleRotation,
+                    Coordinates = coordinates,
+                    OriginalCoordinates = coordinates,
+                    DSOPositionAngle = target.PositionAngle
+                };
+
+                _framing.CameraRectangles.Add(rect);
             }
-            var found = FindFramingCanvas(child);
-            if (found is not null) return found;
+        } finally {
+            _updating = false;
         }
-        return null;
     }
 
-    private void Render() {
-        if (_overlay is null || _host is null) {
-            Attach();
-            if (_overlay is null) return;
-        }
-
-        _overlay.Children.Clear();
-        if (!_settings.ShowHistoricalFields) {
-            _overlay.Visibility = Visibility.Collapsed;
-            return;
-        }
-        _overlay.Visibility = Visibility.Visible;
-        if (_framing.FramingAssistantSource != SkySurveySource.SKYATLAS) return;
-
-        var viewport = _framing.SkyMapAnnotator.ViewportFoV;
-        if (viewport is null || viewport.ArcSecWidth <= 0 || viewport.ArcSecHeight <= 0) return;
-        if (_framing.CameraWidth <= 0 || _framing.CameraHeight <= 0 || _framing.CameraPixelSize <= 0 || _framing.FocalLength <= 0) return;
-
-        _overlay.Width = viewport.Width;
-        _overlay.Height = viewport.Height;
-
-        var cameraArcsecPerPixel = AstroUtil.ArcsecPerPixel(_framing.CameraPixelSize, _framing.FocalLength);
-        var width = _framing.CameraWidth * cameraArcsecPerPixel / viewport.ArcSecWidth;
-        var height = _framing.CameraHeight * cameraArcsecPerPixel / viewport.ArcSecHeight;
-        var currentName = _framing.DSO?.Name ?? string.Empty;
-        var stroke = new SolidColorBrush(System.Windows.Media.Color.FromRgb(102, 170, 112));
-        stroke.Freeze();
-
-        foreach (var target in _targets().Where(t => t.TotalSeconds > 0)) {
-            if (!string.IsNullOrWhiteSpace(currentName)
-                && string.Equals(target.Name, currentName, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            var coordinates = new Coordinates(target.RaDegrees, target.DecDegrees, Epoch.J2000, Coordinates.RAType.Degrees);
-            var center = coordinates.XYProjection(viewport);
-            if (center.X + width / 2 < 0 || center.Y + height / 2 < 0
-                || center.X - width / 2 > viewport.Width || center.Y - height / 2 > viewport.Height)
-                continue;
-
-            var rectangle = new System.Windows.Shapes.Rectangle {
-                Width = width,
-                Height = height,
-                Stroke = stroke,
-                StrokeThickness = 2,
-                Fill = System.Windows.Media.Brushes.Transparent,
-                IsHitTestVisible = false,
-                RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
-                RenderTransform = new RotateTransform(
-                    AstroUtil.EuclidianModulus(360 - target.PositionAngle - viewport.Rotation, 360))
-            };
-            Canvas.SetLeft(rectangle, center.X - width / 2);
-            Canvas.SetTop(rectangle, center.Y - height / 2);
-            _overlay.Children.Add(rectangle);
+    private void RemoveHistoricalRectangles() {
+        for (var i = _framing.CameraRectangles.Count - 1; i >= 0; i--) {
+            var rect = _framing.CameraRectangles[i];
+            if (rect?.Name?.StartsWith(HistoryPrefix, StringComparison.Ordinal) == true) {
+                _framing.CameraRectangles.RemoveAt(i);
+            }
         }
     }
 
     public void Dispose() {
         PluginSettings.SettingsChanged -= SettingsChanged;
-        _attachTimer.Stop();
-        _attachTimer.Tick -= AttachTimer_Tick;
-        if (_annotatorNotifier is not null)
-            _annotatorNotifier.PropertyChanged -= AnnotatorPropertyChanged;
-        Dispatch(() => {
-            if (_host is not null && _overlay is not null)
-                _host.Children.Remove(_overlay);
-            _host = null;
-            _overlay = null;
-        });
+        _refreshTimer.Stop();
+        _refreshTimer.Tick -= RefreshTimer_Tick;
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher?.CheckAccess() == true) RemoveHistoricalRectangles();
+        else dispatcher?.BeginInvoke(RemoveHistoricalRectangles, DispatcherPriority.Background);
     }
 }
