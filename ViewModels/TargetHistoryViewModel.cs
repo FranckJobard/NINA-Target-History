@@ -25,6 +25,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     private readonly HistoricalFramingOverlay _historicalOverlay;
     private string _search = "";
     private string _status = "All";
+    private bool _showPlannedFields;
     public ObservableCollection<TargetHistoryItem> Targets { get; } = new();
     public ObservableCollection<TargetHistoryItem> ImagedTargets { get; } = new();
     public ObservableCollection<TargetHistoryItem> PlannedTargets { get; } = new();
@@ -54,8 +55,13 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    // UI placeholder only for now. Planned-field overlay will be wired later.
-    public bool ShowPlannedFields { get; set; } = false;
+    public bool ShowPlannedFields {
+        get => _showPlannedFields;
+        set {
+            if (!Set(ref _showPlannedFields, value)) return;
+            _historicalOverlay.Refresh();
+        }
+    }
 
     public RelayCommand BrowseCommand { get; }
     public RelayCommand RefreshCommand { get; }
@@ -66,7 +72,10 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         _profileService = profileService;
         _framingAssistantVM = framingAssistantVM;
         _applicationMediator = applicationMediator;
-        _historicalOverlay = new HistoricalFramingOverlay(framingAssistantVM, () => Targets);
+        _historicalOverlay = new HistoricalFramingOverlay(
+            framingAssistantVM,
+            () => Targets,
+            () => ShowPlannedFields);
         var ninaDefaultSequenceFolder = profileService.ActiveProfile.SequenceSettings.DefaultSequenceFolder;
         _settings.Load();
         if (string.IsNullOrWhiteSpace(SequenceFolder) && Directory.Exists(ninaDefaultSequenceFolder)) {
