@@ -88,7 +88,7 @@
     <DataGridTemplateColumn Header="" Width="70">
      <DataGridTemplateColumn.CellTemplate>
       <DataTemplate>
-       <Button Content="Open"
+       <Button Content="Open" FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=DataGrid}}"
         Command="{Binding DataContext.OpenAstroBinCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
         CommandParameter="{Binding}"/>
       </DataTemplate>
