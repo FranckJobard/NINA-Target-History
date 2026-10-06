@@ -41,15 +41,15 @@
   <DataGrid x:Name="ImagedTargetsGrid" Grid.Row="2" Margin="0,22,0,0" ItemsSource="{Binding ImagedTargets}" AutoGenerateColumns="False"
             IsReadOnly="False" CanUserAddRows="False" HeadersVisibility="Column"
             GridLinesVisibility="None" SelectionMode="Single" VerticalContentAlignment="Center"
-            RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick" SelectionChanged="TargetGrid_SelectionChanged" LostKeyboardFocus="TargetGrid_LostKeyboardFocus">
+            RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick" SelectionChanged="TargetGrid_SelectionChanged" LostKeyboardFocus="TargetGrid_LostKeyboardFocus" Sorting="ImagedTargetsGrid_Sorting">
    <DataGrid.Resources>
     <Style TargetType="{x:Type DataGridCell}"><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
    </DataGrid.Resources>
    <DataGrid.Columns>
-    <DataGridTextColumn Header="Target" Binding="{Binding Name}" IsReadOnly="True" Width="2*">
+    <DataGridTextColumn Header="Target" Binding="{Binding Name}" IsReadOnly="True" CanUserSort="True" SortMemberPath="Name" Width="2*">
      <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/></Style></DataGridTextColumn.ElementStyle>
     </DataGridTextColumn>
-    <DataGridTemplateColumn Header="Exposures" Width="4*">
+    <DataGridTemplateColumn Header="Exposures" CanUserSort="False" Width="4*">
      <DataGridTemplateColumn.CellTemplate>
       <DataTemplate>
        <ItemsControl ItemsSource="{Binding Filters}" HorizontalAlignment="Center">
@@ -69,10 +69,10 @@
       </DataTemplate>
      </DataGridTemplateColumn.CellTemplate>
     </DataGridTemplateColumn>
-    <DataGridTextColumn Header="Total" Binding="{Binding TotalDisplay}" IsReadOnly="True" Width="90">
+    <DataGridTextColumn Header="Total" Binding="{Binding TotalDisplay}" IsReadOnly="True" CanUserSort="True" SortMemberPath="TotalSeconds" Width="90">
      <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/></Style></DataGridTextColumn.ElementStyle>
     </DataGridTextColumn>
-    <DataGridTemplateColumn Header="Finished" Width="75">
+    <DataGridTemplateColumn Header="Finished" CanUserSort="False" Width="75">
      <DataGridTemplateColumn.CellTemplate>
       <DataTemplate>
        <CheckBox IsChecked="{Binding Finished, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -81,11 +81,11 @@
       </DataTemplate>
      </DataGridTemplateColumn.CellTemplate>
     </DataGridTemplateColumn>
-    <DataGridTextColumn Header="Link" Binding="{Binding AstroBinUrl, Mode=TwoWay}" Width="2*">
+    <DataGridTextColumn Header="Link" Binding="{Binding AstroBinUrl, Mode=TwoWay}" CanUserSort="False" Width="2*">
      <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/></Style></DataGridTextColumn.ElementStyle>
      <DataGridTextColumn.EditingElementStyle><Style TargetType="TextBox"><Setter Property="TextAlignment" Value="Center"/></Style></DataGridTextColumn.EditingElementStyle>
     </DataGridTextColumn>
-    <DataGridTemplateColumn Header="" Width="70">
+    <DataGridTemplateColumn Header="" CanUserSort="False" Width="70">
      <DataGridTemplateColumn.CellTemplate>
       <DataTemplate>
        <Button Content="Open" FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=DataGrid}}"
