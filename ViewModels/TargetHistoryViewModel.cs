@@ -44,6 +44,19 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         private set { _settings.SequenceFolder = value; OnPropertyChanged(); }
     }
 
+    public bool ShowHistoricalFields {
+        get => _settings.ShowHistoricalFields;
+        set {
+            if (_settings.ShowHistoricalFields == value) return;
+            _settings.ShowHistoricalFields = value;
+            _settings.Save();
+            OnPropertyChanged();
+        }
+    }
+
+    // UI placeholder only for now. Planned-field overlay will be wired later.
+    public bool ShowPlannedFields { get; set; } = false;
+
     public RelayCommand BrowseCommand { get; }
     public RelayCommand RefreshCommand { get; }
     public RelayCommand OpenAstroBinCommand { get; }
