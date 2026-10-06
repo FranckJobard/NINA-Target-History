@@ -160,9 +160,9 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 IsHitTestVisible = false,
                 ClipToBounds = true,
                 HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top,
-                Panel.ZIndex = 1000
+                VerticalAlignment = VerticalAlignment.Top
             };
+            Panel.SetZIndex(_overlay, 1000);
             parentCanvas.Children.Add(_overlay);
             return true;
         }
