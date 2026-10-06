@@ -19,6 +19,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private Canvas? _host;
     private Canvas? _overlay;
     private INotifyPropertyChanged? _annotatorNotifier;
+    private readonly DispatcherTimer _attachTimer;
 
     public HistoricalFramingOverlay(IFramingAssistantVM framing, Func<IEnumerable<TargetHistoryItem>> targets) {
         _framing = framing;
@@ -26,6 +27,27 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         _settings.Load();
         PluginSettings.SettingsChanged += SettingsChanged;
         HookAnnotator();
+
+        // The Framing Assistant visual tree is created lazily after the tab is selected.
+        // Keep trying on the UI dispatcher so an early OpenTarget call cannot silently miss it.
+        _attachTimer = new DispatcherTimer(DispatcherPriority.Background) {
+            Interval = TimeSpan.FromMilliseconds(400)
+        };
+        _attachTimer.Tick += AttachTimer_Tick;
+        _attachTimer.Start();
+    }
+
+    private void AttachTimer_Tick(object? sender, EventArgs e) {
+        if (!_settings.ShowHistoricalFields) {
+            if (_overlay is not null) _overlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        Attach();
+        if (_overlay is not null) {
+            _overlay.Visibility = Visibility.Visible;
+            Render();
+        }
     }
 
     private void HookAnnotator() {
@@ -96,7 +118,11 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         }
 
         _overlay.Children.Clear();
-        if (!_settings.ShowHistoricalFields) return;
+        if (!_settings.ShowHistoricalFields) {
+            _overlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+        _overlay.Visibility = Visibility.Visible;
         if (_framing.FramingAssistantSource != SkySurveySource.SKYATLAS) return;
 
         var viewport = _framing.SkyMapAnnotator.ViewportFoV;
@@ -143,6 +169,8 @@ public sealed class HistoricalFramingOverlay : IDisposable {
 
     public void Dispose() {
         PluginSettings.SettingsChanged -= SettingsChanged;
+        _attachTimer.Stop();
+        _attachTimer.Tick -= AttachTimer_Tick;
         if (_annotatorNotifier is not null)
             _annotatorNotifier.PropertyChanged -= AnnotatorPropertyChanged;
         Dispatch(() => {
