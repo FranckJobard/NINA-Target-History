@@ -52,7 +52,15 @@ public partial class TargetHistoryView : System.Windows.Controls.UserControl {
 
         DependencyObject? source = e.OriginalSource as DependencyObject;
         while (source is not null && source is not DataGridRow) {
-            source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+            source = source switch {
+                System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D
+                    => System.Windows.Media.VisualTreeHelper.GetParent(source),
+                FrameworkContentElement contentElement
+                    => contentElement.Parent,
+                FrameworkElement frameworkElement
+                    => frameworkElement.Parent,
+                _ => null
+            };
         }
 
         if (source is DataGridRow row && row.Item is TargetHistoryItem target) {
