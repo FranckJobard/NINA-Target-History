@@ -20,6 +20,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private readonly PluginSettings _settings = new();
     private readonly DispatcherTimer _refreshTimer;
     private bool _updating;
+    private string _lastDiagnostic = "";
 
     public HistoricalFramingOverlay(IFramingAssistantVM framing, Func<IEnumerable<TargetHistoryItem>> targets) {
         _framing = framing;
@@ -56,27 +57,45 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         if (_updating) return;
         _updating = true;
         try {
-            RemoveHistoricalRectangles();
-            if (!_settings.ShowHistoricalFields) return;
-            if (_framing.FramingAssistantSource != SkySurveySource.SKYATLAS) return;
+            // Capture N.I.N.A.'s own current 1x1 rectangle before removing ours.
+            // Reusing its exact pixel dimensions avoids duplicating N.I.N.A.'s
+            // camera/FOV calculation and guarantees identical field size.
+            var native = _framing.CameraRectangles.FirstOrDefault(r =>
+                r?.Name?.StartsWith(HistoryPrefix, StringComparison.Ordinal) != true);
 
-            // Do not interfere with a mosaic currently being designed by the user.
-            // A 1x1 framing is the safe historical-overlay case.
-            if (_framing.HorizontalPanels != 1 || _framing.VerticalPanels != 1) return;
+            RemoveHistoricalRectangles();
+            if (!_settings.ShowHistoricalFields) {
+                Diagnostic("OFF");
+                return;
+            }
+            if (_framing.FramingAssistantSource != SkySurveySource.SKYATLAS) {
+                Diagnostic($"source={_framing.FramingAssistantSource}; historical projection currently requires SKYATLAS");
+                return;
+            }
+            if (_framing.HorizontalPanels != 1 || _framing.VerticalPanels != 1) {
+                Diagnostic($"mosaic={_framing.HorizontalPanels}x{_framing.VerticalPanels}; overlay suppressed");
+                return;
+            }
+            if (native is null || native.Width <= 0 || native.Height <= 0) {
+                Diagnostic("no usable native CameraRectangle yet");
+                return;
+            }
 
             var viewport = _framing.SkyMapAnnotator.ViewportFoV;
             if (viewport is null || viewport.Width <= 0 || viewport.Height <= 0
-                || viewport.ArcSecWidth <= 0 || viewport.ArcSecHeight <= 0) return;
-            if (_framing.CameraWidth <= 0 || _framing.CameraHeight <= 0
-                || _framing.CameraPixelSize <= 0 || _framing.FocalLength <= 0) return;
+                || viewport.ArcSecWidth <= 0 || viewport.ArcSecHeight <= 0) {
+                Diagnostic("no usable SKYATLAS viewport yet");
+                return;
+            }
 
-            var arcsecPerPixel = AstroUtil.ArcsecPerPixel(_framing.CameraPixelSize, _framing.FocalLength);
-            var width = _framing.CameraWidth * arcsecPerPixel / viewport.ArcSecWidth;
-            var height = _framing.CameraHeight * arcsecPerPixel / viewport.ArcSecHeight;
+            var width = native.Width;
+            var height = native.Height;
             var currentName = _framing.DSO?.Name ?? string.Empty;
             var parentRotation = _framing.Rectangle?.Rotation ?? 0d;
+            var candidates = _targets().Where(t => t.TotalSeconds > 0).ToList();
+            var added = 0;
 
-            foreach (var target in _targets().Where(t => t.TotalSeconds > 0)) {
+            foreach (var target in candidates) {
                 if (!string.IsNullOrWhiteSpace(currentName)
                     && string.Equals(target.Name, currentName, StringComparison.OrdinalIgnoreCase)) {
                     continue;
@@ -91,33 +110,39 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                     continue;
                 }
 
-                // CameraRectangles are rendered inside an ItemsControl which N.I.N.A.
-                // rotates by Rectangle.Rotation. Compensate that parent rotation and
-                // preserve the PositionAngle stored in the historical sequence.
                 var screenRotation = AstroUtil.EuclidianModulus(
                     360 - target.PositionAngle - viewport.Rotation, 360);
                 var rectangleRotation = AstroUtil.EuclidianModulus(
                     screenRotation - parentRotation, 360);
 
-                var rect = new FramingRectangle(
+                _framing.CameraRectangles.Add(new FramingRectangle(
                     viewport.Rotation,
                     center.X - width / 2,
                     center.Y - height / 2,
                     width,
                     height) {
-                    Id = 0, // N.I.N.A. hides the panel number for Id=0
+                    Id = 0,
                     Name = HistoryPrefix + target.Name,
                     Rotation = rectangleRotation,
                     Coordinates = coordinates,
                     OriginalCoordinates = coordinates,
                     DSOPositionAngle = target.PositionAngle
-                };
-
-                _framing.CameraRectangles.Add(rect);
+                });
+                added++;
             }
+
+            Diagnostic($"source=SKYATLAS; historical={candidates.Count}; visible={added}; viewport={viewport.Width:0}x{viewport.Height:0}; native={width:0}x{height:0}");
+        } catch (Exception ex) {
+            Logger.Error(ex);
         } finally {
             _updating = false;
         }
+    }
+
+    private void Diagnostic(string message) {
+        if (message == _lastDiagnostic) return;
+        _lastDiagnostic = message;
+        Logger.Info($"Target History framing: {message}");
     }
 
     private void RemoveHistoricalRectangles() {
