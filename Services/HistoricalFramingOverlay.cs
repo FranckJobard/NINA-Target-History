@@ -69,26 +69,13 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 return;
             }
 
-            var ninaViewport = _framing.SkyMapAnnotator.ViewportFoV;
-            if (ninaViewport is null || ninaViewport.Width <= 0 || ninaViewport.Height <= 0
-                || ninaViewport.ArcSecWidth <= 0 || ninaViewport.ArcSecHeight <= 0) {
+            var viewport = _framing.SkyMapAnnotator.ViewportFoV;
+            if (viewport is null || viewport.Width <= 0 || viewport.Height <= 0
+                || viewport.ArcSecWidth <= 0 || viewport.ArcSecHeight <= 0) {
                 ClearOverlay();
                 Diagnostic("waiting for SKYATLAS viewport");
                 return;
             }
-
-            // N.I.N.A. recalculates Rectangle.Coordinates whenever the SKYATLAS is
-            // dragged. Build a fresh viewport from that live framing center so our
-            // historical layer follows the sky rather than the originally selected target.
-            var liveCenter = _framing.RectangleCalculated && _framing.Rectangle?.Coordinates is not null
-                ? _framing.Rectangle.Coordinates
-                : ninaViewport.CenterCoordinates;
-            var viewport = new ViewportFoV(
-                liveCenter,
-                ninaViewport.VFoV,
-                ninaViewport.Width,
-                ninaViewport.Height,
-                ninaViewport.Rotation);
 
             if (!EnsureOverlayAttached()) {
                 Diagnostic("waiting for FramingAssistant SkyMap canvas");
@@ -193,12 +180,16 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 string.Equals(d.GetType().FullName, "NINA.View.SkyMapOverlayView", StringComparison.Ordinal));
             if (skyMapView is null) continue;
 
-            // Attach as a sibling of SkyMapOverlayView so the layer is visible above
-            // N.I.N.A.'s sky image. Projection/scaling below keeps it in sky coordinates.
-            var parentCanvas = VisualTreeHelper.GetParent(skyMapView) as Canvas;
-            if (parentCanvas is null) continue;
+            // N.I.N.A. draws the grid, DSO outlines/names and telescope marker into
+            // SkyMapAnnotator.SkyMapOverlay, displayed by the Image inside this Canvas.
+            // Put Target History in that exact same visual layer so ImageView applies
+            // the same pan/zoom/rotation transform to both.
+            var skyCanvas = FindDescendant(skyMapView, d => d is Canvas) as Canvas;
+            if (skyCanvas is null) continue;
+            var skyImage = skyCanvas.Children.OfType<System.Windows.Controls.Image>().FirstOrDefault();
+            if (skyImage is null) continue;
 
-            foreach (var child in parentCanvas.Children.OfType<Canvas>()) {
+            foreach (var child in skyCanvas.Children.OfType<Canvas>()) {
                 if (Equals(child.Tag, OverlayTag)) {
                     _overlay = child;
                     return true;
@@ -213,13 +204,13 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 VerticalAlignment = System.Windows.VerticalAlignment.Top
             };
             _overlay.SetBinding(FrameworkElement.WidthProperty, new System.Windows.Data.Binding("ActualWidth") {
-                Source = parentCanvas
+                Source = skyImage
             });
             _overlay.SetBinding(FrameworkElement.HeightProperty, new System.Windows.Data.Binding("ActualHeight") {
-                Source = parentCanvas
+                Source = skyImage
             });
             System.Windows.Controls.Panel.SetZIndex(_overlay, 1000);
-            parentCanvas.Children.Add(_overlay);
+            skyCanvas.Children.Add(_overlay);
             return true;
         }
         return false;
