@@ -82,8 +82,10 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 return;
             }
 
-            _overlay!.Width = viewport.Width;
-            _overlay.Height = viewport.Height;
+            var hostWidth = _overlay!.ActualWidth > 0 ? _overlay.ActualWidth : viewport.Width;
+            var hostHeight = _overlay.ActualHeight > 0 ? _overlay.ActualHeight : viewport.Height;
+            var scaleX = hostWidth / viewport.Width;
+            var scaleY = hostHeight / viewport.Height;
             _overlay.Children.Clear();
 
             var native = _framing.CameraRectangles.FirstOrDefault();
@@ -93,19 +95,20 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             foreach (var target in candidates) {
                 var coordinates = new Coordinates(
                     target.RaDegrees, target.DecDegrees, Epoch.J2000, Coordinates.RAType.Degrees);
-                var center = coordinates.XYProjection(viewport);
+                var projected = coordinates.XYProjection(viewport);
+                var center = new System.Windows.Point(projected.X * scaleX, projected.Y * scaleY);
 
                 var width = target.FieldWidthDegrees > 0
-                    ? AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth
-                    : native?.Width ?? 0d;
+                    ? (AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth) * scaleX
+                    : (native?.Width ?? 0d) * scaleX;
                 var height = target.FieldHeightDegrees > 0
-                    ? AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight
-                    : native?.Height ?? 0d;
+                    ? (AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight) * scaleY
+                    : (native?.Height ?? 0d) * scaleY;
 
                 if (width <= 0 || height <= 0) continue;
                 if (center.X + width / 2d < 0 || center.Y + height / 2d < 0
-                    || center.X - width / 2d > viewport.Width
-                    || center.Y - height / 2d > viewport.Height) {
+                    || center.X - width / 2d > hostWidth
+                    || center.Y - height / 2d > hostHeight) {
                     continue;
                 }
 
@@ -145,7 +148,10 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 string.Equals(d.GetType().FullName, "NINA.View.SkyMapOverlayView", StringComparison.Ordinal));
             if (skyMapView is null) continue;
 
-            var parentCanvas = VisualTreeHelper.GetParent(skyMapView) as Canvas;
+            // Attach inside N.I.N.A.'s own SkyMapOverlayView canvas. This gives the
+            // historical fields exactly the same pixel coordinate space as the sky map
+            // while N.I.N.A. pans and zooms the viewport.
+            var parentCanvas = FindDescendant(skyMapView, d => d is Canvas) as Canvas;
             if (parentCanvas is null) continue;
 
             foreach (var child in parentCanvas.Children.OfType<Canvas>()) {
@@ -159,9 +165,15 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 Tag = OverlayTag,
                 IsHitTestVisible = false,
                 ClipToBounds = true,
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
-                VerticalAlignment = System.Windows.VerticalAlignment.Top
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
+                VerticalAlignment = System.Windows.VerticalAlignment.Stretch
             };
+            _overlay.SetBinding(FrameworkElement.WidthProperty, new System.Windows.Data.Binding("ActualWidth") {
+                Source = parentCanvas
+            });
+            _overlay.SetBinding(FrameworkElement.HeightProperty, new System.Windows.Data.Binding("ActualHeight") {
+                Source = parentCanvas
+            });
             System.Windows.Controls.Panel.SetZIndex(_overlay, 1000);
             parentCanvas.Children.Add(_overlay);
             return true;
