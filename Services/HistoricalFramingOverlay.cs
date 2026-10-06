@@ -57,9 +57,6 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         if (_updating) return;
         _updating = true;
         try {
-            // Capture N.I.N.A.'s own current 1x1 rectangle before removing ours.
-            // Reusing its exact pixel dimensions avoids duplicating N.I.N.A.'s
-            // camera/FOV calculation and guarantees identical field size.
             var native = _framing.CameraRectangles.FirstOrDefault(r =>
                 r?.Name?.StartsWith(HistoryPrefix, StringComparison.Ordinal) != true);
 
@@ -69,11 +66,19 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 return;
             }
             if (_framing.FramingAssistantSource != SkySurveySource.SKYATLAS) {
-                Diagnostic($"source={_framing.FramingAssistantSource}; historical projection currently requires SKYATLAS");
+                Diagnostic($"source={_framing.FramingAssistantSource}; historical projection requires SKYATLAS");
                 return;
             }
             if (_framing.HorizontalPanels != 1 || _framing.VerticalPanels != 1) {
                 Diagnostic($"mosaic={_framing.HorizontalPanels}x{_framing.VerticalPanels}; overlay suppressed");
+                return;
+            }
+
+            var viewport = _framing.SkyMapAnnotator.ViewportFoV;
+            var parent = _framing.Rectangle;
+            if (viewport is null || parent is null || viewport.Width <= 0 || viewport.Height <= 0
+                || viewport.ArcSecWidth <= 0 || viewport.ArcSecHeight <= 0) {
+                Diagnostic("no usable SKYATLAS viewport/parent rectangle yet");
                 return;
             }
             if (native is null || native.Width <= 0 || native.Height <= 0) {
@@ -81,21 +86,22 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 return;
             }
 
-            var viewport = _framing.SkyMapAnnotator.ViewportFoV;
-            if (viewport is null || viewport.Width <= 0 || viewport.Height <= 0
-                || viewport.ArcSecWidth <= 0 || viewport.ArcSecHeight <= 0) {
-                Diagnostic("no usable SKYATLAS viewport yet");
-                return;
-            }
-
-            // Each target row owns its angular field. Convert that stored field
-            // to the current SKYATLAS viewport just as a mosaic panel is converted
-            // to screen geometry. Fall back to N.I.N.A.'s native rectangle only
-            // for older/incomplete rows.
             var currentName = _framing.DSO?.Name ?? string.Empty;
-            var parentRotation = _framing.Rectangle?.Rotation ?? 0d;
             var candidates = _targets().Where(t => t.TotalSeconds > 0).ToList();
             var added = 0;
+
+            // FramingAssistantView.xaml renders CameraRectangles inside an ItemsControl:
+            // 1) ItemsControl.Margin = Rectangle.X/Y
+            // 2) ItemsControl.RenderTransform = Rectangle.Rotation around its center
+            // 3) each CameraRectangle X/Y is RELATIVE to that parent.
+            // Therefore project each historical RA/Dec to the viewport first, then
+            // inverse-rotate it around the parent center and finally subtract parent X/Y.
+            var parentCenter = new System.Windows.Point(
+                parent.X + parent.Width / 2d,
+                parent.Y + parent.Height / 2d);
+            var parentRadians = -parent.Rotation * Math.PI / 180d;
+            var cos = Math.Cos(parentRadians);
+            var sin = Math.Sin(parentRadians);
 
             foreach (var target in candidates) {
                 if (!string.IsNullOrWhiteSpace(currentName)
@@ -105,7 +111,8 @@ public sealed class HistoricalFramingOverlay : IDisposable {
 
                 var coordinates = new Coordinates(
                     target.RaDegrees, target.DecDegrees, Epoch.J2000, Coordinates.RAType.Degrees);
-                var center = coordinates.XYProjection(viewport);
+                var screenCenter = coordinates.XYProjection(viewport);
+
                 var width = target.FieldWidthDegrees > 0
                     ? AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth
                     : native.Width;
@@ -113,33 +120,46 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                     ? AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight
                     : native.Height;
 
-                if (center.X + width / 2 < 0 || center.Y + height / 2 < 0
-                    || center.X - width / 2 > viewport.Width || center.Y - height / 2 > viewport.Height) {
+                if (screenCenter.X + width / 2d < 0 || screenCenter.Y + height / 2d < 0
+                    || screenCenter.X - width / 2d > viewport.Width
+                    || screenCenter.Y - height / 2d > viewport.Height) {
                     continue;
                 }
 
-                var screenRotation = AstroUtil.EuclidianModulus(
-                    360 - target.PositionAngle - viewport.Rotation, 360);
-                var rectangleRotation = AstroUtil.EuclidianModulus(
-                    screenRotation - parentRotation, 360);
+                // Undo the parent ItemsControl rotation so the child lands at the
+                // requested sky position after N.I.N.A. applies that rotation again.
+                var dx = screenCenter.X - parentCenter.X;
+                var dy = screenCenter.Y - parentCenter.Y;
+                var unrotatedX = parentCenter.X + dx * cos - dy * sin;
+                var unrotatedY = parentCenter.Y + dx * sin + dy * cos;
+
+                var relativeX = unrotatedX - parent.X - width / 2d;
+                var relativeY = unrotatedY - parent.Y - height / 2d;
+
+                // N.I.N.A. defines DSO PA as 360 - total screen rotation.
+                // Child Rotation is relative to the already-rotated parent.
+                var desiredScreenRotation = AstroUtil.EuclidianModulus(
+                    360d - target.PositionAngle, 360d);
+                var childRotation = AstroUtil.EuclidianModulus(
+                    desiredScreenRotation - parent.Rotation, 360d);
 
                 _framing.CameraRectangles.Add(new FramingRectangle(
                     viewport.Rotation,
-                    center.X - width / 2,
-                    center.Y - height / 2,
+                    relativeX,
+                    relativeY,
                     width,
                     height) {
                     Id = 0,
                     Name = HistoryPrefix + target.Name,
-                    Rotation = rectangleRotation,
+                    Rotation = childRotation,
                     Coordinates = coordinates,
                     OriginalCoordinates = coordinates,
-                    DSOPositionAngle = target.PositionAngle
+                    DSOPositionAngle = AstroUtil.EuclidianModulus(target.PositionAngle, 360d)
                 });
                 added++;
             }
 
-            Diagnostic($"source=SKYATLAS; historical={candidates.Count}; visible={added}; viewport={viewport.Width:0}x{viewport.Height:0}; native={native.Width:0}x{native.Height:0}");
+            Diagnostic($"relative-mosaic geometry; historical={candidates.Count}; visible={added}; parent=({parent.X:0},{parent.Y:0}) {parent.Width:0}x{parent.Height:0} rot={parent.Rotation:0.0}");
         } catch (Exception ex) {
             Logger.Error(ex);
         } finally {
