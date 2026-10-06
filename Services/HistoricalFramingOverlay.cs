@@ -88,8 +88,10 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 return;
             }
 
-            var width = native.Width;
-            var height = native.Height;
+            // Each target row owns its angular field. Convert that stored field
+            // to the current SKYATLAS viewport just as a mosaic panel is converted
+            // to screen geometry. Fall back to N.I.N.A.'s native rectangle only
+            // for older/incomplete rows.
             var currentName = _framing.DSO?.Name ?? string.Empty;
             var parentRotation = _framing.Rectangle?.Rotation ?? 0d;
             var candidates = _targets().Where(t => t.TotalSeconds > 0).ToList();
@@ -104,6 +106,12 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 var coordinates = new Coordinates(
                     target.RaDegrees, target.DecDegrees, Epoch.J2000, Coordinates.RAType.Degrees);
                 var center = coordinates.XYProjection(viewport);
+                var width = target.FieldWidthDegrees > 0
+                    ? AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth
+                    : native.Width;
+                var height = target.FieldHeightDegrees > 0
+                    ? AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight
+                    : native.Height;
 
                 if (center.X + width / 2 < 0 || center.Y + height / 2 < 0
                     || center.X - width / 2 > viewport.Width || center.Y - height / 2 > viewport.Height) {
@@ -131,7 +139,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 added++;
             }
 
-            Diagnostic($"source=SKYATLAS; historical={candidates.Count}; visible={added}; viewport={viewport.Width:0}x{viewport.Height:0}; native={width:0}x{height:0}");
+            Diagnostic($"source=SKYATLAS; historical={candidates.Count}; visible={added}; viewport={viewport.Width:0}x{viewport.Height:0}; native={native.Width:0}x{native.Height:0}");
         } catch (Exception ex) {
             Logger.Error(ex);
         } finally {
