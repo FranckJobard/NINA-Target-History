@@ -37,7 +37,7 @@
               TextTrimming="CharacterEllipsis"/>
   </DockPanel>
 
-  <DockPanel Grid.Row="2" Margin="0,0,0,4">
+  <DockPanel Grid.Row="2" Margin="0,0,0,4" VerticalAlignment="Top">
    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
     <TextBlock Text="Show historical fields" VerticalAlignment="Center" Margin="0,0,8,0"/>
     <CheckBox IsChecked="{Binding ShowHistoricalFields, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -45,7 +45,7 @@
    </StackPanel>
    <TextBlock Text="Imaged targets" FontWeight="Bold" VerticalAlignment="Center"/>
   </DockPanel>
-  <DataGrid x:Name="ImagedTargetsGrid" Grid.Row="2" Margin="0,22,0,0" ItemsSource="{Binding ImagedTargets}" AutoGenerateColumns="False"
+  <DataGrid x:Name="ImagedTargetsGrid" Grid.Row="2" Margin="0,26,0,0" ItemsSource="{Binding ImagedTargets}" AutoGenerateColumns="False"
             IsReadOnly="False" CanUserAddRows="False" HeadersVisibility="Column"
             GridLinesVisibility="None" SelectionMode="Single" VerticalContentAlignment="Center"
             RowHeight="18" MouseDoubleClick="TargetGrid_MouseDoubleClick" SelectionChanged="TargetGrid_SelectionChanged" LostKeyboardFocus="TargetGrid_LostKeyboardFocus" Sorting="ImagedTargetsGrid_Sorting">
