@@ -25,15 +25,20 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private const string OverlayTag = "__TargetHistorySkyOverlay__";
     private readonly IFramingAssistantVM _framing;
     private readonly Func<IEnumerable<TargetHistoryItem>> _targets;
+    private readonly Func<bool> _showPlannedFields;
     private readonly PluginSettings _settings = new();
     private readonly DispatcherTimer _refreshTimer;
     private Canvas? _overlay;
     private INotifyPropertyChanged? _skyMapNotifier;
     private string _lastDiagnostic = "";
 
-    public HistoricalFramingOverlay(IFramingAssistantVM framing, Func<IEnumerable<TargetHistoryItem>> targets) {
+    public HistoricalFramingOverlay(
+        IFramingAssistantVM framing,
+        Func<IEnumerable<TargetHistoryItem>> targets,
+        Func<bool> showPlannedFields) {
         _framing = framing;
         _targets = targets;
+        _showPlannedFields = showPlannedFields;
         _settings.Load();
         PluginSettings.SettingsChanged += SettingsChanged;
         AttachSkyMapRedrawListener();
@@ -81,7 +86,9 @@ public sealed class HistoricalFramingOverlay : IDisposable {
 
     private void RefreshCore() {
         try {
-            if (!_settings.ShowHistoricalFields) {
+            var showImaged = _settings.ShowHistoricalFields;
+            var showPlanned = _showPlannedFields();
+            if (!showImaged && !showPlanned) {
                 ClearOverlay();
                 Diagnostic("OFF");
                 return;
@@ -114,7 +121,10 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             _overlay.Children.Clear();
 
             var native = _framing.CameraRectangles.FirstOrDefault();
-            var candidates = _targets().Where(t => t.TotalSeconds > 0).ToList();
+            var candidates = _targets()
+                .Where(t => (showImaged && t.TotalSeconds > 0)
+                         || (showPlanned && t.TotalSeconds <= 0))
+                .ToList();
             var visible = 0;
 
             foreach (var target in candidates) {
@@ -158,7 +168,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 visible++;
             }
 
-            Diagnostic($"sky overlay attached; historical={candidates.Count}; visible={visible}; viewport={viewport.Width:0}x{viewport.Height:0}");
+            Diagnostic($"sky overlay attached; fields={candidates.Count}; visible={visible}; imaged={showImaged}; planned={showPlanned}; viewport={viewport.Width:0}x{viewport.Height:0}");
         } catch (Exception ex) {
             Logger.Error(ex);
         }
