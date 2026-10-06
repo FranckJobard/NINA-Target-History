@@ -7,6 +7,10 @@ public sealed class TargetHistoryItem : System.ComponentModel.INotifyPropertyCha
     public double RaDegrees { get; set; }
     public double DecDegrees { get; set; }
     public double PositionAngle { get; set; }
+    // Hidden framing data carried by each row. These properties are intentionally
+    // not displayed as DataGrid columns; they make each target self-contained.
+    public double FieldWidthDegrees { get; set; }
+    public double FieldHeightDegrees { get; set; }
     public DateTime MostRecentSequenceUtc { get; set; }
     public ObservableCollection<FilterTotal> Filters { get; } = new();
     public double TotalSeconds => Filters.Sum(x => x.Seconds);
