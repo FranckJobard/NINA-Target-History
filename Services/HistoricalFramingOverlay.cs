@@ -190,16 +190,18 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             viewport.ArcSecWidth,
             viewport.ArcSecHeight);
 
-        // Sequence PositionAngle is the camera PA. N.I.N.A.'s DSO annotation
-        // convention uses 90 - PA before applying the local projection correction.
-        var angle = 90d - target.PositionAngle;
+        // Sequence PositionAngle is the camera/frame PA. Unlike N.I.N.A.'s
+        // FramingDSO ellipse (whose major axis convention includes a 90° offset),
+        // our rectangle is already drawn with Width on X and Height on Y.
+        // Therefore PA=0 must remain horizontal at the viewport centre.
+        var angle = -target.PositionAngle;
         if (Math.Abs(viewport.CenterCoordinates.RA - coordinates.RA) > 1E-13
             || Math.Abs(viewport.CenterCoordinates.Dec - coordinates.Dec) > 1E-13) {
-            angle -= 90d - AstroUtil.CalculatePositionAngle(
+            angle += AstroUtil.CalculatePositionAngle(
                 referenceCenter.RADegrees,
                 coordinates.RADegrees,
                 referenceCenter.Dec,
-                coordinates.Dec);
+                coordinates.Dec) - 90d;
         }
 
         return angle;
