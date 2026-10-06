@@ -148,10 +148,9 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 string.Equals(d.GetType().FullName, "NINA.View.SkyMapOverlayView", StringComparison.Ordinal));
             if (skyMapView is null) continue;
 
-            // Attach inside N.I.N.A.'s own SkyMapOverlayView canvas. This gives the
-            // historical fields exactly the same pixel coordinate space as the sky map
-            // while N.I.N.A. pans and zooms the viewport.
-            var parentCanvas = FindDescendant(skyMapView, d => d is Canvas) as Canvas;
+            // Attach as a sibling of SkyMapOverlayView so the layer is visible above
+            // N.I.N.A.'s sky image. Projection/scaling below keeps it in sky coordinates.
+            var parentCanvas = VisualTreeHelper.GetParent(skyMapView) as Canvas;
             if (parentCanvas is null) continue;
 
             foreach (var child in parentCanvas.Children.OfType<Canvas>()) {
@@ -165,8 +164,8 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 Tag = OverlayTag,
                 IsHitTestVisible = false,
                 ClipToBounds = true,
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
-                VerticalAlignment = System.Windows.VerticalAlignment.Stretch
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
+                VerticalAlignment = System.Windows.VerticalAlignment.Top
             };
             _overlay.SetBinding(FrameworkElement.WidthProperty, new System.Windows.Data.Binding("ActualWidth") {
                 Source = parentCanvas
