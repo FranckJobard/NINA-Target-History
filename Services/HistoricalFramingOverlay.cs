@@ -30,8 +30,8 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private readonly DispatcherTimer _refreshTimer;
     private Canvas? _overlay;
     private StackPanel? _toolbarToggles;
-    private CheckBox? _imagedToggle;
-    private CheckBox? _plannedToggle;
+    private System.Windows.Controls.CheckBox? _imagedToggle;
+    private System.Windows.Controls.CheckBox? _plannedToggle;
     private bool _syncingToggles;
     private readonly Action<bool> _setImagedFields;
     private readonly Action<bool> _setPlannedFields;
@@ -302,14 +302,14 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 Margin = new Thickness(6, 0, 10, 0),
                 ToolTip = "Target History sky fields"
             };
-            var imaged = new CheckBox {
+            var imaged = new System.Windows.Controls.CheckBox {
                 Content = "Imaged",
                 Foreground = Brushes.Lime,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 10, 0),
                 ToolTip = "Show or hide imaged Target History fields"
             };
-            var planned = new CheckBox {
+            var planned = new System.Windows.Controls.CheckBox {
                 Content = "Planned",
                 Foreground = Brushes.Yellow,
                 VerticalAlignment = VerticalAlignment.Center,
