@@ -54,11 +54,12 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         PluginSettings.SettingsChanged += SettingsChanged;
         AttachSkyMapRedrawListener();
 
-        _refreshTimer = new DispatcherTimer(DispatcherPriority.Render) {
+        _refreshTimer = new DispatcherTimer(DispatcherPriority.Render, System.Windows.Application.Current.Dispatcher) {
             Interval = TimeSpan.FromMilliseconds(250)
         };
         _refreshTimer.Tick += RefreshTimer_Tick;
         _refreshTimer.Start();
+        Logger.Info("Target History toolbar: UI dispatcher timer initialized");
     }
 
     private void SettingsChanged(object? sender, EventArgs e) {
