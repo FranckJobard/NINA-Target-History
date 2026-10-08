@@ -97,13 +97,13 @@
    </RowDefinition>
   </Grid.RowDefinitions>
 
-  <Grid>
+  <Grid Grid.Row="0">
    <Grid.ColumnDefinitions>
-    <ColumnDefinition Width="*"/>
-    <ColumnDefinition Width="Auto"/>
-    <ColumnDefinition Width="Auto"/>
+    <ColumnDefinition Width="*" />
+    <ColumnDefinition Width="Auto" />
+    <ColumnDefinition Width="Auto" />
    </Grid.ColumnDefinitions>
-   <TextBox Grid.Column="0" Margin="0,0,8,0" Padding="8,5"
+   <TextBox Grid.Column="0" MaxWidth="420" HorizontalAlignment="Stretch" Margin="0,0,8,0" Padding="8,5"
             Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}"
             ToolTip="Search target"/>
    <ComboBox Grid.Column="1" Width="120" Margin="0,0,8,0"
@@ -112,16 +112,12 @@
     <ComboBoxItem Content="In progress"/>
     <ComboBoxItem Content="Finished"/>
    </ComboBox>
-   <Button Grid.Column="2" Content="Refresh" Padding="12,5"
-           Command="{Binding RefreshCommand}"/>
+   <Button Grid.Column="2" Content="Sequences folder…" Padding="10,4"
+           Command="{Binding BrowseCommand}"/>
   </Grid>
 
-  <DockPanel Grid.Row="1" Margin="0,8,0,8">
-   <Button DockPanel.Dock="Right" Content="Sequences folder…" Padding="10,4"
-           Command="{Binding BrowseCommand}"/>
-   <TextBlock VerticalAlignment="Center" Text="{Binding SequenceFolder}"
-              TextTrimming="CharacterEllipsis"/>
-  </DockPanel>
+  <TextBlock Grid.Row="1" Margin="0,8,0,8" VerticalAlignment="Center"
+             Text="{Binding SequenceFolder}" TextTrimming="CharacterEllipsis"/>
 
   <DockPanel Grid.Row="2" Margin="0,0,0,4" VerticalAlignment="Top">
    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
