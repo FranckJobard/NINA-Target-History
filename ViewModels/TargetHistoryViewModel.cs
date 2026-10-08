@@ -75,7 +75,9 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         _historicalOverlay = new HistoricalFramingOverlay(
             framingAssistantVM,
             () => Targets,
-            () => ShowPlannedFields);
+            () => ShowPlannedFields,
+            value => ShowHistoricalFields = value,
+            value => ShowPlannedFields = value);
         var ninaDefaultSequenceFolder = profileService.ActiveProfile.SequenceSettings.DefaultSequenceFolder;
         _settings.Load();
         if (string.IsNullOrWhiteSpace(SequenceFolder) && Directory.Exists(ninaDefaultSequenceFolder)) {

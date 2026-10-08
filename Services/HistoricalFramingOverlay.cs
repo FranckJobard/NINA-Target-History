@@ -29,16 +29,26 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private readonly PluginSettings _settings = new();
     private readonly DispatcherTimer _refreshTimer;
     private Canvas? _overlay;
+    private StackPanel? _toolbarToggles;
+    private CheckBox? _imagedToggle;
+    private CheckBox? _plannedToggle;
+    private bool _syncingToggles;
+    private readonly Action<bool> _setImagedFields;
+    private readonly Action<bool> _setPlannedFields;
     private INotifyPropertyChanged? _skyMapNotifier;
     private string _lastDiagnostic = "";
 
     public HistoricalFramingOverlay(
         IFramingAssistantVM framing,
         Func<IEnumerable<TargetHistoryItem>> targets,
-        Func<bool> showPlannedFields) {
+        Func<bool> showPlannedFields,
+        Action<bool> setImagedFields,
+        Action<bool> setPlannedFields) {
         _framing = framing;
         _targets = targets;
         _showPlannedFields = showPlannedFields;
+        _setImagedFields = setImagedFields;
+        _setPlannedFields = setPlannedFields;
         _settings.Load();
         PluginSettings.SettingsChanged += SettingsChanged;
         AttachSkyMapRedrawListener();
@@ -57,6 +67,8 @@ public sealed class HistoricalFramingOverlay : IDisposable {
 
     private void RefreshTimer_Tick(object? sender, EventArgs e) {
         AttachSkyMapRedrawListener();
+        EnsureToolbarToggles();
+        SyncToolbarToggles();
         RefreshCore();
     }
 
@@ -258,6 +270,87 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         return false;
     }
 
+    // Controls are hosted in the Framing Assistant toolbar, not in the native
+    // CameraRectangles collection. They use the same state as the dockable table.
+    private void EnsureToolbarToggles() {
+        if (_toolbarToggles?.Parent is Panel) return;
+        foreach (System.Windows.Window window in System.Windows.Application.Current.Windows) {
+            var framingView = FindDescendant(window, d =>
+                string.Equals(d.GetType().FullName, "NINA.View.FramingAssistantView", StringComparison.Ordinal));
+            if (framingView is null) continue;
+
+            // Anchor next to N.I.N.A.'s Opacity caption without depending on its
+            // private control names or changing the existing toolbar layout.
+            var opacityCaption = FindDescendant(framingView, d =>
+                d is TextBlock text && text.Text?.Trim().Equals("Opacity", StringComparison.OrdinalIgnoreCase) == true);
+            if (opacityCaption is null) continue;
+            var parent = VisualTreeHelper.GetParent(opacityCaption);
+            while (parent is not null && parent is not Panel) parent = VisualTreeHelper.GetParent(parent);
+            if (parent is not Panel panel) continue;
+            var anchorChild = opacityCaption;
+            while (VisualTreeHelper.GetParent(anchorChild) != panel) {
+                var next = VisualTreeHelper.GetParent(anchorChild);
+                if (next is null) break;
+                anchorChild = next;
+            }
+            var index = panel.Children.IndexOf((UIElement)anchorChild);
+            if (index < 0) continue;
+
+            var group = new StackPanel {
+                Orientation = Orientation.Horizontal,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(6, 0, 10, 0),
+                ToolTip = "Target History sky fields"
+            };
+            var imaged = new CheckBox {
+                Content = "Imaged",
+                Foreground = Brushes.Lime,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 10, 0),
+                ToolTip = "Show or hide imaged Target History fields"
+            };
+            var planned = new CheckBox {
+                Content = "Planned",
+                Foreground = Brushes.Yellow,
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = "Show or hide planned Target History fields"
+            };
+            imaged.Checked += ToolbarImagedChanged;
+            imaged.Unchecked += ToolbarImagedChanged;
+            planned.Checked += ToolbarPlannedChanged;
+            planned.Unchecked += ToolbarPlannedChanged;
+            group.Children.Add(imaged);
+            group.Children.Add(planned);
+            panel.Children.Insert(index, group);
+            _toolbarToggles = group;
+            _imagedToggle = imaged;
+            _plannedToggle = planned;
+            SyncToolbarToggles();
+            return;
+        }
+    }
+
+    private void SyncToolbarToggles() {
+        if (_imagedToggle is null || _plannedToggle is null) return;
+        _syncingToggles = true;
+        try {
+            _imagedToggle.IsChecked = _settings.ShowHistoricalFields;
+            _plannedToggle.IsChecked = _showPlannedFields();
+        } finally {
+            _syncingToggles = false;
+        }
+    }
+
+    private void ToolbarImagedChanged(object sender, RoutedEventArgs e) {
+        if (!_syncingToggles && _imagedToggle is not null)
+            _setImagedFields(_imagedToggle.IsChecked == true);
+    }
+
+    private void ToolbarPlannedChanged(object sender, RoutedEventArgs e) {
+        if (!_syncingToggles && _plannedToggle is not null)
+            _setPlannedFields(_plannedToggle.IsChecked == true);
+    }
+
     private static DependencyObject? FindDescendant(DependencyObject root, Func<DependencyObject, bool> predicate) {
         if (predicate(root)) return root;
         var count = VisualTreeHelper.GetChildrenCount(root);
@@ -286,6 +379,18 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             _skyMapNotifier = null;
         }
         _refreshTimer.Stop();
+        if (_imagedToggle is not null) {
+            _imagedToggle.Checked -= ToolbarImagedChanged;
+            _imagedToggle.Unchecked -= ToolbarImagedChanged;
+        }
+        if (_plannedToggle is not null) {
+            _plannedToggle.Checked -= ToolbarPlannedChanged;
+            _plannedToggle.Unchecked -= ToolbarPlannedChanged;
+        }
+        if (_toolbarToggles?.Parent is Panel toolbarParent) toolbarParent.Children.Remove(_toolbarToggles);
+        _toolbarToggles = null;
+        _imagedToggle = null;
+        _plannedToggle = null;
         _refreshTimer.Tick -= RefreshTimer_Tick;
         if (_overlay?.Parent is System.Windows.Controls.Panel parent) parent.Children.Remove(_overlay);
         _overlay = null;
