@@ -94,11 +94,15 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         // dockables off the UI thread. Initialization is deferred until the view is Loaded.
     }
 
-    private bool Filter(object obj) {
+    private bool MatchesSearch(object obj) {
         if (obj is not TargetHistoryItem t) return false;
         if (!string.IsNullOrWhiteSpace(Search)
             && !t.Name.Contains(Search, StringComparison.OrdinalIgnoreCase))
             return false;
+        return true;
+    }
+
+    private bool MatchesImagedStatus(TargetHistoryItem t) {
         return Status switch {
             "In progress" => !t.Finished,
             "Finished" => t.Finished,
@@ -187,9 +191,13 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     private void PopulateVisibleLists() {
         ImagedTargets.Clear();
         PlannedTargets.Clear();
-        foreach (var item in Targets.Where(Filter).OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)) {
-            if (item.TotalSeconds > 0) ImagedTargets.Add(item);
-            else PlannedTargets.Add(item);
+        foreach (var item in Targets.Where(MatchesSearch).OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)) {
+            if (item.TotalSeconds > 0) {
+                if (MatchesImagedStatus(item)) ImagedTargets.Add(item);
+            } else {
+                // Planned targets have no progress status; only search applies.
+                PlannedTargets.Add(item);
+            }
         }
     }
 
