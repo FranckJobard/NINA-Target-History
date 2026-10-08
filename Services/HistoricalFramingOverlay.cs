@@ -375,9 +375,9 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         // draws its own switch and ignores Background/BorderBrush.
         var border = new FrameworkElementFactory(typeof(Border));
         border.Name = "SwitchBorder";
-        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(13));
-        border.SetValue(Border.PaddingProperty, new Thickness(11, 3, 11, 3));
-        border.SetValue(Border.MinWidthProperty, 54.0);
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(10));
+        border.SetValue(Border.PaddingProperty, new Thickness(7, 1, 7, 1));
+        border.SetValue(Border.MinWidthProperty, 40.0);
         border.SetValue(Border.BackgroundProperty, System.Windows.Media.Brushes.Transparent);
         border.SetValue(Border.BorderBrushProperty, accent);
         border.SetValue(Border.BorderThicknessProperty, new Thickness(1));
