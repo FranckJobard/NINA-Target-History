@@ -328,7 +328,19 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             imaged.Unchecked += ToolbarImagedChanged;
             planned.Checked += ToolbarPlannedChanged;
             planned.Unchecked += ToolbarPlannedChanged;
+            group.Children.Add(new TextBlock {
+                Text = "Imaged targets",
+                Foreground = System.Windows.Media.Brushes.Gainsboro,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 5, 0)
+            });
             group.Children.Add(imaged);
+            group.Children.Add(new TextBlock {
+                Text = "Planned targets",
+                Foreground = System.Windows.Media.Brushes.Gainsboro,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 5, 0)
+            });
             group.Children.Add(planned);
             panel.Children.Insert(index, group);
             _toolbarToggles = group;
