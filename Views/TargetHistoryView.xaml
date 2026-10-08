@@ -9,7 +9,7 @@
    <Setter Property="Template">
     <Setter.Value>
      <ControlTemplate TargetType="{x:Type CheckBox}">
-      <Border x:Name="SwitchBorder" Background="Transparent" BorderBrush="Lime" BorderThickness="1" CornerRadius="13" Padding="11,3" MinWidth="54">
+      <Border x:Name="SwitchBorder" Background="Transparent" BorderBrush="Lime" BorderThickness="1" CornerRadius="10" Padding="7,1" MinWidth="40">
        <TextBlock x:Name="SwitchLabel" Text="OFF" TextAlignment="Center" FontWeight="SemiBold" Foreground="Lime"/>
       </Border>
       <ControlTemplate.Triggers>
@@ -28,7 +28,7 @@
    <Setter Property="Template">
     <Setter.Value>
      <ControlTemplate TargetType="{x:Type CheckBox}">
-      <Border x:Name="SwitchBorder" Background="Transparent" BorderBrush="Yellow" BorderThickness="1" CornerRadius="13" Padding="11,3" MinWidth="54">
+      <Border x:Name="SwitchBorder" Background="Transparent" BorderBrush="Yellow" BorderThickness="1" CornerRadius="10" Padding="7,1" MinWidth="40">
        <TextBlock x:Name="SwitchLabel" Text="OFF" TextAlignment="Center" FontWeight="SemiBold" Foreground="Yellow"/>
       </Border>
       <ControlTemplate.Triggers>
