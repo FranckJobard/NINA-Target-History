@@ -312,15 +312,19 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 ToolTip = "Target History sky fields"
             };
             var imaged = new System.Windows.Controls.CheckBox {
-                Content = "Imaged",
-                Foreground = System.Windows.Media.Brushes.Lime,
+                Content = "ON",
+                Foreground = System.Windows.Media.Brushes.Black,
+                Background = System.Windows.Media.Brushes.Lime,
+                BorderBrush = System.Windows.Media.Brushes.Lime,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 10, 0),
                 ToolTip = "Show or hide imaged Target History fields"
             };
             var planned = new System.Windows.Controls.CheckBox {
-                Content = "Planned",
-                Foreground = System.Windows.Media.Brushes.Yellow,
+                Content = "ON",
+                Foreground = System.Windows.Media.Brushes.Black,
+                Background = System.Windows.Media.Brushes.Yellow,
+                BorderBrush = System.Windows.Media.Brushes.Yellow,
                 VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = "Show or hide planned Target History fields"
             };
@@ -328,7 +332,19 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             imaged.Unchecked += ToolbarImagedChanged;
             planned.Checked += ToolbarPlannedChanged;
             planned.Unchecked += ToolbarPlannedChanged;
+            group.Children.Add(new TextBlock {
+                Text = "Imaged targets",
+                Foreground = System.Windows.Media.Brushes.Lime,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 5, 0)
+            });
             group.Children.Add(imaged);
+            group.Children.Add(new TextBlock {
+                Text = "Planned targets",
+                Foreground = System.Windows.Media.Brushes.Yellow,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 5, 0)
+            });
             group.Children.Add(planned);
             panel.Children.Insert(index, group);
             _toolbarToggles = group;
