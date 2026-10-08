@@ -4,6 +4,29 @@
  xmlns:models="clr-namespace:NINA.TargetHistory.Models">
  <UserControl.Resources>
   <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+  <Style x:Key="ColoredCollapseToggle" TargetType="{x:Type ToggleButton}">
+   <Setter Property="Background" Value="Transparent"/>
+   <Setter Property="BorderThickness" Value="0"/>
+   <Setter Property="Padding" Value="0"/>
+   <Setter Property="HorizontalAlignment" Value="Left"/>
+   <Setter Property="Cursor" Value="Hand"/>
+   <Setter Property="Template">
+    <Setter.Value>
+     <ControlTemplate TargetType="{x:Type ToggleButton}">
+      <StackPanel Orientation="Horizontal" Background="Transparent" VerticalAlignment="Center">
+       <TextBlock x:Name="Arrow" Text="▼" Foreground="{TemplateBinding Foreground}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+       <TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" FontWeight="Bold" VerticalAlignment="Center"/>
+      </StackPanel>
+      <ControlTemplate.Triggers>
+       <Trigger Property="IsChecked" Value="False">
+        <Setter TargetName="Arrow" Property="Text" Value="▶"/>
+       </Trigger>
+      </ControlTemplate.Triggers>
+     </ControlTemplate>
+    </Setter.Value>
+   </Setter>
+  </Style>
+
  </UserControl.Resources>
  <Grid Margin="12">
   <Grid.RowDefinitions>
@@ -68,7 +91,7 @@
     <CheckBox IsChecked="{Binding ShowHistoricalFields, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
               VerticalAlignment="Center" Focusable="False"/>
    </StackPanel>
-   <ToggleButton x:Name="ImagedExpanded" IsChecked="True" Content="▼ Imaged targets" FontWeight="Bold" VerticalAlignment="Center" Padding="6,2" ToolTip="Expand or collapse imaged targets"/>
+   <ToggleButton x:Name="ImagedExpanded" IsChecked="True" Content="Imaged targets" Foreground="Lime" Style="{StaticResource ColoredCollapseToggle}" VerticalAlignment="Center" ToolTip="Expand or collapse imaged targets"/>
   </DockPanel>
   <DataGrid x:Name="ImagedTargetsGrid" Grid.Row="2" Visibility="{Binding IsChecked, ElementName=ImagedExpanded, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,26,0,0" ItemsSource="{Binding ImagedTargets}" AutoGenerateColumns="False"
             IsReadOnly="False" CanUserAddRows="False" HeadersVisibility="Column"
@@ -134,7 +157,7 @@
     <CheckBox IsChecked="{Binding ShowPlannedFields, Mode=TwoWay}"
               VerticalAlignment="Center" Focusable="False"/>
    </StackPanel>
-   <ToggleButton x:Name="PlannedExpanded" IsChecked="True" Content="▼ Planned targets" FontWeight="Bold" VerticalAlignment="Center" Padding="6,2" ToolTip="Expand or collapse planned targets"/>
+   <ToggleButton x:Name="PlannedExpanded" IsChecked="True" Content="Planned targets" Foreground="Yellow" Style="{StaticResource ColoredCollapseToggle}" VerticalAlignment="Center" ToolTip="Expand or collapse planned targets"/>
   </DockPanel>
   <DataGrid x:Name="PlannedTargetsGrid" Grid.Row="4" Visibility="{Binding IsChecked, ElementName=PlannedExpanded, Converter={StaticResource BooleanToVisibilityConverter}}" ItemsSource="{Binding PlannedTargets}" AutoGenerateColumns="False"
             IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column"
