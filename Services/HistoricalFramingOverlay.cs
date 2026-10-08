@@ -279,22 +279,16 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 string.Equals(d.GetType().FullName, "NINA.View.FramingAssistantView", StringComparison.Ordinal));
             if (framingView is null) continue;
 
-            // Anchor next to N.I.N.A.'s Opacity caption without depending on its
-            // private control names or changing the existing toolbar layout.
-            var opacityCaption = FindDescendant(framingView, d =>
-                d is TextBlock text && text.Text?.Trim().Equals("Opacity", StringComparison.OrdinalIgnoreCase) == true);
-            if (opacityCaption is null) continue;
-            var parent = VisualTreeHelper.GetParent(opacityCaption);
-            while (parent is not null && parent is not System.Windows.Controls.Panel) parent = VisualTreeHelper.GetParent(parent);
-            if (parent is not System.Windows.Controls.Panel panel) continue;
-            var anchorChild = opacityCaption;
-            while (VisualTreeHelper.GetParent(anchorChild) != panel) {
-                var next = VisualTreeHelper.GetParent(anchorChild);
-                if (next is null) break;
-                anchorChild = next;
-            }
-            var index = panel.Children.IndexOf((UIElement)anchorChild);
-            if (index < 0) continue;
+            // N.I.N.A. declares the Opacity toolbar as ImageView.ButtonHeaderContent.
+            // Access its actual StackPanel rather than searching for a localized
+            // TextBlock (which may not be present in the realized visual tree).
+            var imageView = FindDescendant(framingView, d =>
+                d.GetType().Name == "ImageView" &&
+                d.GetType().GetProperty("ButtonHeaderContent") is not null);
+            if (imageView is null) continue;
+            var header = imageView.GetType().GetProperty("ButtonHeaderContent")?.GetValue(imageView);
+            if (header is not System.Windows.Controls.Panel panel) continue;
+            var index = 0;
 
             var group = new StackPanel {
                 Orientation = System.Windows.Controls.Orientation.Horizontal,
