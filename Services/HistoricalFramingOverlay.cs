@@ -150,7 +150,11 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 var rectangle = new System.Windows.Shapes.Rectangle {
                     Width = width,
                     Height = height,
-                    Stroke = System.Windows.Media.Brushes.White,
+                    Stroke = target.TotalSeconds <= 0
+                        ? System.Windows.Media.Brushes.Yellow
+                        : target.Finished
+                            ? System.Windows.Media.Brushes.DeepSkyBlue
+                            : System.Windows.Media.Brushes.Lime,
                     StrokeThickness = 2,
                     Fill = System.Windows.Media.Brushes.Transparent,
                     IsHitTestVisible = false,
