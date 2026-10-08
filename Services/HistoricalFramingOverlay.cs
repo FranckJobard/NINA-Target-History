@@ -348,7 +348,26 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             _plannedToggle = planned;
             SyncToolbarToggles();
             ToolbarDiagnostic("controls attached next to Opacity");
+            group.Loaded += (_, _) => ValidateToolbarSwitches();
             return;
+    }
+
+    private void ValidateToolbarSwitches() {
+        if (_imagedToggle is null || _plannedToggle is null) return;
+        ValidateSwitch("Imaged", _imagedToggle, System.Windows.Media.Brushes.Lime);
+        ValidateSwitch("Planned", _plannedToggle, System.Windows.Media.Brushes.Yellow);
+    }
+
+    private static void ValidateSwitch(string name, System.Windows.Controls.CheckBox toggle, System.Windows.Media.Brush accent) {
+        toggle.ApplyTemplate();
+        var border = toggle.Template?.FindName("SwitchBorder", toggle) as Border;
+        var label = toggle.Template?.FindName("SwitchLabel", toggle) as TextBlock;
+        var expectedBackground = toggle.IsChecked == true ? accent : System.Windows.Media.Brushes.Transparent;
+        var backgroundOk = border is not null && Equals(border.Background, expectedBackground);
+        var outlineOk = border is not null && Equals(border.BorderBrush, accent);
+        var expectedText = toggle.IsChecked == true ? "ON" : "OFF";
+        var textOk = label is not null && label.Text == expectedText;
+        Logger.Info($"Target History toolbar test: {name} template={(border is not null && label is not null ? "PASS" : "FAIL")}; background={(backgroundOk ? "PASS" : "FAIL")}; border={(outlineOk ? "PASS" : "FAIL")}; text={(textOk ? "PASS" : "FAIL")}; state={expectedText}");
     }
 
     private static ControlTemplate CreateColoredSwitchTemplate(System.Windows.Media.Brush accent) {
@@ -410,13 +429,19 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     }
 
     private void ToolbarImagedChanged(object sender, RoutedEventArgs e) {
-        if (!_syncingToggles && _imagedToggle is not null)
+        if (!_syncingToggles && _imagedToggle is not null) {
             _setImagedFields(_imagedToggle.IsChecked == true);
+            Logger.Info($"Target History toolbar: Imaged clicked; enabled={_imagedToggle.IsChecked == true}");
+            _imagedToggle.Dispatcher.BeginInvoke(new Action(() => ValidateSwitch("Imaged", _imagedToggle, System.Windows.Media.Brushes.Lime)), DispatcherPriority.Loaded);
+        }
     }
 
     private void ToolbarPlannedChanged(object sender, RoutedEventArgs e) {
-        if (!_syncingToggles && _plannedToggle is not null)
+        if (!_syncingToggles && _plannedToggle is not null) {
             _setPlannedFields(_plannedToggle.IsChecked == true);
+            Logger.Info($"Target History toolbar: Planned clicked; enabled={_plannedToggle.IsChecked == true}");
+            _plannedToggle.Dispatcher.BeginInvoke(new Action(() => ValidateSwitch("Planned", _plannedToggle, System.Windows.Media.Brushes.Yellow)), DispatcherPriority.Loaded);
+        }
     }
 
     private static DependencyObject? FindDescendant(DependencyObject root, Func<DependencyObject, bool> predicate) {
