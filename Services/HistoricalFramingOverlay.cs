@@ -112,13 +112,16 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 return;
             }
 
+            var overlay = _overlay;
+            if (overlay is null) return;
+
             // This canvas lives in the exact same native-pixel coordinate space as
             // SkyMapAnnotator.SkyMapOverlay. ImageView/Viewbox performs display scaling.
             var hostWidth = viewport.Width;
             var hostHeight = viewport.Height;
             var scaleX = 1d;
             var scaleY = 1d;
-            _overlay.Children.Clear();
+            overlay.Children.Clear();
 
             var native = _framing.CameraRectangles.FirstOrDefault();
             var candidates = _targets()
@@ -168,7 +171,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
 
                 Canvas.SetLeft(rectangle, center.X - width / 2d);
                 Canvas.SetTop(rectangle, center.Y - height / 2d);
-                _overlay.Children.Add(rectangle);
+                overlay.Children.Add(rectangle);
                 visible++;
             }
 
