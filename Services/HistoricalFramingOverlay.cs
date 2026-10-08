@@ -68,8 +68,13 @@ public sealed class HistoricalFramingOverlay : IDisposable {
 
     private void RefreshTimer_Tick(object? sender, EventArgs e) {
         AttachSkyMapRedrawListener();
-        EnsureToolbarToggles();
-        SyncToolbarToggles();
+        try {
+            EnsureToolbarToggles();
+            SyncToolbarToggles();
+        } catch (Exception ex) {
+            ToolbarDiagnostic($"toolbar exception: {ex.GetType().Name}: {ex.Message}");
+            Logger.Error(ex);
+        }
         RefreshCore();
     }
 
@@ -275,27 +280,28 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     // CameraRectangles collection. They use the same state as the dockable table.
     private void EnsureToolbarToggles() {
         if (_toolbarToggles?.Parent is System.Windows.Controls.Panel) return;
-        foreach (System.Windows.Window window in System.Windows.Application.Current.Windows) {
-            var framingView = FindDescendant(window, d =>
-                string.Equals(d.GetType().FullName, "NINA.View.FramingAssistantView", StringComparison.Ordinal));
-            if (framingView is null) continue;
-
-            // The native toolbar is the ContentPresenter at Grid.Column=6
-            // in ImageView.xaml. Its Content is the actual header StackPanel.
-            var imageView = FindDescendant(framingView, d =>
-                string.Equals(d.GetType().FullName, "NINA.WPF.Base.View.ImageView", StringComparison.Ordinal));
-            if (imageView is null) {
-                ToolbarDiagnostic("Framing ImageView not found");
-                continue;
-            }
-            var presenter = FindDescendant(imageView, d =>
-                d is ContentPresenter cp
-                && cp.Content is StackPanel
-                && System.Windows.Controls.Grid.GetColumn(cp) == 6) as ContentPresenter;
-            if (presenter?.Content is not StackPanel panel) {
-                ToolbarDiagnostic("ImageView toolbar ContentPresenter not found");
-                continue;
-            }
+        // Reuse the sky overlay we already located successfully. Its visual
+        // ancestors include the actual Framing ImageView in this N.I.N.A. build.
+        if (_overlay?.Parent is null) {
+            ToolbarDiagnostic("waiting for attached sky overlay");
+            return;
+        }
+        DependencyObject? ancestor = _overlay;
+        while (ancestor is not null &&
+               !string.Equals(ancestor.GetType().Name, "ImageView", StringComparison.Ordinal))
+            ancestor = VisualTreeHelper.GetParent(ancestor);
+        if (ancestor is null) {
+            ToolbarDiagnostic("ImageView ancestor not found above sky overlay");
+            return;
+        }
+        var presenter = FindDescendant(ancestor, d =>
+            d is ContentPresenter cp
+            && cp.Content is StackPanel
+            && System.Windows.Controls.Grid.GetColumn(cp) == 6) as ContentPresenter;
+        if (presenter?.Content is not StackPanel panel) {
+            ToolbarDiagnostic("ImageView toolbar presenter not found");
+            return;
+        }
             var index = 0;
 
             var group = new StackPanel {
@@ -330,8 +336,6 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             SyncToolbarToggles();
             ToolbarDiagnostic("controls attached next to Opacity");
             return;
-        }
-        ToolbarDiagnostic("Framing toolbar search completed without attachment");
     }
 
     private void ToolbarDiagnostic(string message) {
