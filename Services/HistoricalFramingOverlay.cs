@@ -37,6 +37,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private readonly Action<bool> _setPlannedFields;
     private INotifyPropertyChanged? _skyMapNotifier;
     private string _lastDiagnostic = "";
+    private string _lastToolbarDiagnostic = "";
 
     public HistoricalFramingOverlay(
         IFramingAssistantVM framing,
@@ -279,15 +280,22 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 string.Equals(d.GetType().FullName, "NINA.View.FramingAssistantView", StringComparison.Ordinal));
             if (framingView is null) continue;
 
-            // N.I.N.A. declares the Opacity toolbar as ImageView.ButtonHeaderContent.
-            // Access its actual StackPanel rather than searching for a localized
-            // TextBlock (which may not be present in the realized visual tree).
-            var imageView = FindDescendant(framingView, d =>
-                d.GetType().Name == "ImageView" &&
-                d.GetType().GetProperty("ButtonHeaderContent") is not null);
-            if (imageView is null) continue;
-            var header = imageView.GetType().GetProperty("ButtonHeaderContent")?.GetValue(imageView);
-            if (header is not System.Windows.Controls.Panel panel) continue;
+            // Anchor to the *realized* opacity stepper in the WPF visual tree.
+            // ButtonHeaderContent may not be available via reflection in all
+            // N.I.N.A. builds, while the stepper is a visible native control.
+            var opacityStepper = FindDescendant(framingView, d =>
+                d.GetType().Name == "StepperControl");
+            if (opacityStepper is null) {
+                ToolbarDiagnostic("waiting for native opacity stepper");
+                continue;
+            }
+            DependencyObject? ancestor = VisualTreeHelper.GetParent(opacityStepper);
+            while (ancestor is not null && ancestor is not StackPanel)
+                ancestor = VisualTreeHelper.GetParent(ancestor);
+            if (ancestor is not StackPanel panel) {
+                ToolbarDiagnostic("opacity stepper has no StackPanel parent");
+                continue;
+            }
             var index = 0;
 
             var group = new StackPanel {
@@ -320,8 +328,15 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             _imagedToggle = imaged;
             _plannedToggle = planned;
             SyncToolbarToggles();
+            ToolbarDiagnostic("controls attached next to Opacity");
             return;
         }
+    }
+
+    private void ToolbarDiagnostic(string message) {
+        if (_lastToolbarDiagnostic == message) return;
+        _lastToolbarDiagnostic = message;
+        Logger.Info($"Target History toolbar: {message}");
     }
 
     private void SyncToolbarToggles() {
