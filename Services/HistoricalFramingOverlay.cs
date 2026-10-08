@@ -150,25 +150,25 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                     continue;
                 }
 
-                // N.I.N.A.'s theme can supply an implicit Rectangle style that
-                // overrides Stroke through a style trigger. Opt out of implicit
-                // styling so our status color remains the rendered outline.
+                // Diagnostic: render the historical field with a translucent fill
+                // and a thick colored border. This distinguishes our overlay from
+                // N.I.N.A.'s native white outlines without changing its geometry.
+                var fieldColor = target.TotalSeconds <= 0
+                    ? System.Windows.Media.Colors.Yellow
+                    : target.Finished
+                        ? System.Windows.Media.Colors.DeepSkyBlue
+                        : System.Windows.Media.Colors.Lime;
+                var fillColor = System.Windows.Media.Color.FromArgb(
+                    65, fieldColor.R, fieldColor.G, fieldColor.B);
                 var rectangle = new System.Windows.Shapes.Rectangle {
                     Style = null,
                     Width = width,
                     Height = height,
-                    Stroke = target.TotalSeconds <= 0
-                        ? System.Windows.Media.Brushes.Yellow
-                        : target.Finished
-                            ? System.Windows.Media.Brushes.DeepSkyBlue
-                            : System.Windows.Media.Brushes.Lime,
-                    StrokeThickness = 2,
-                    Fill = System.Windows.Media.Brushes.Transparent,
+                    Stroke = new SolidColorBrush(fieldColor),
+                    StrokeThickness = 5,
+                    Fill = new SolidColorBrush(fillColor),
                     IsHitTestVisible = false,
                     RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
-                    // Match N.I.N.A.'s FramingDSO orientation logic: project the
-                    // target in the native sky viewport, then correct its stored
-                    // position angle for the local sky orientation at that point.
                     RenderTransform = new RotateTransform(
                         CalculateHistoricalFieldRotation(target, coordinates, center, viewport))
                 };
