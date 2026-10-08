@@ -313,18 +313,14 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             };
             var imaged = new System.Windows.Controls.CheckBox {
                 Content = "ON",
-                Foreground = System.Windows.Media.Brushes.Black,
-                Background = System.Windows.Media.Brushes.Lime,
-                BorderBrush = System.Windows.Media.Brushes.Lime,
+                Template = CreateColoredSwitchTemplate(System.Windows.Media.Brushes.Lime),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 10, 0),
                 ToolTip = "Show or hide imaged Target History fields"
             };
             var planned = new System.Windows.Controls.CheckBox {
                 Content = "ON",
-                Foreground = System.Windows.Media.Brushes.Black,
-                Background = System.Windows.Media.Brushes.Yellow,
-                BorderBrush = System.Windows.Media.Brushes.Yellow,
+                Template = CreateColoredSwitchTemplate(System.Windows.Media.Brushes.Yellow),
                 VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = "Show or hide planned Target History fields"
             };
@@ -353,6 +349,47 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             SyncToolbarToggles();
             ToolbarDiagnostic("controls attached next to Opacity");
             return;
+    }
+
+    private static ControlTemplate CreateColoredSwitchTemplate(System.Windows.Media.Brush accent) {
+        // A local control template is required: N.I.N.A.'s CheckBox theme
+        // draws its own switch and ignores Background/BorderBrush.
+        var border = new FrameworkElementFactory(typeof(Border));
+        border.Name = "SwitchBorder";
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(13));
+        border.SetValue(Border.PaddingProperty, new Thickness(11, 3, 11, 3));
+        border.SetValue(Border.MinWidthProperty, 54.0);
+        border.SetValue(Border.BackgroundProperty, System.Windows.Media.Brushes.Transparent);
+        border.SetValue(Border.BorderBrushProperty, accent);
+        border.SetValue(Border.BorderThicknessProperty, new Thickness(1));
+
+        var label = new FrameworkElementFactory(typeof(TextBlock));
+        label.Name = "SwitchLabel";
+        label.SetValue(TextBlock.TextAlignmentProperty, TextAlignment.Center);
+        label.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
+        label.SetValue(TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Gainsboro);
+        label.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("IsChecked") {
+            RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.TemplatedParent),
+            Converter = new BooleanOnOffConverter()
+        });
+        border.AppendChild(label);
+
+        var template = new ControlTemplate(typeof(System.Windows.Controls.CheckBox)) { VisualTree = border };
+        var checkedTrigger = new Trigger {
+            Property = System.Windows.Controls.CheckBox.IsCheckedProperty,
+            Value = true
+        };
+        checkedTrigger.Setters.Add(new Setter(Border.BackgroundProperty, accent, "SwitchBorder"));
+        checkedTrigger.Setters.Add(new Setter(TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Black, "SwitchLabel"));
+        template.Triggers.Add(checkedTrigger);
+        return template;
+    }
+
+    private sealed class BooleanOnOffConverter : System.Windows.Data.IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            => value is true ? "ON" : "OFF";
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            => System.Windows.Data.Binding.DoNothing;
     }
 
     private void ToolbarDiagnostic(string message) {
