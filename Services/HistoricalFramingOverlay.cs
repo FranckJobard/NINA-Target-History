@@ -150,7 +150,11 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                     continue;
                 }
 
+                // N.I.N.A.'s theme can supply an implicit Rectangle style that
+                // overrides Stroke through a style trigger. Opt out of implicit
+                // styling so our status color remains the rendered outline.
                 var rectangle = new System.Windows.Shapes.Rectangle {
+                    Style = null,
                     Width = width,
                     Height = height,
                     Stroke = target.TotalSeconds <= 0
