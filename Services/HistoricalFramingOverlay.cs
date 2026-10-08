@@ -273,7 +273,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     // Controls are hosted in the Framing Assistant toolbar, not in the native
     // CameraRectangles collection. They use the same state as the dockable table.
     private void EnsureToolbarToggles() {
-        if (_toolbarToggles?.Parent is Panel) return;
+        if (_toolbarToggles?.Parent is System.Windows.Controls.Panel) return;
         foreach (System.Windows.Window window in System.Windows.Application.Current.Windows) {
             var framingView = FindDescendant(window, d =>
                 string.Equals(d.GetType().FullName, "NINA.View.FramingAssistantView", StringComparison.Ordinal));
@@ -285,8 +285,8 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 d is TextBlock text && text.Text?.Trim().Equals("Opacity", StringComparison.OrdinalIgnoreCase) == true);
             if (opacityCaption is null) continue;
             var parent = VisualTreeHelper.GetParent(opacityCaption);
-            while (parent is not null && parent is not Panel) parent = VisualTreeHelper.GetParent(parent);
-            if (parent is not Panel panel) continue;
+            while (parent is not null && parent is not System.Windows.Controls.Panel) parent = VisualTreeHelper.GetParent(parent);
+            if (parent is not System.Windows.Controls.Panel panel) continue;
             var anchorChild = opacityCaption;
             while (VisualTreeHelper.GetParent(anchorChild) != panel) {
                 var next = VisualTreeHelper.GetParent(anchorChild);
@@ -297,21 +297,21 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             if (index < 0) continue;
 
             var group = new StackPanel {
-                Orientation = Orientation.Horizontal,
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(6, 0, 10, 0),
                 ToolTip = "Target History sky fields"
             };
             var imaged = new System.Windows.Controls.CheckBox {
                 Content = "Imaged",
-                Foreground = Brushes.Lime,
+                Foreground = System.Windows.Media.Brushes.Lime,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 10, 0),
                 ToolTip = "Show or hide imaged Target History fields"
             };
             var planned = new System.Windows.Controls.CheckBox {
                 Content = "Planned",
-                Foreground = Brushes.Yellow,
+                Foreground = System.Windows.Media.Brushes.Yellow,
                 VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = "Show or hide planned Target History fields"
             };
@@ -387,7 +387,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             _plannedToggle.Checked -= ToolbarPlannedChanged;
             _plannedToggle.Unchecked -= ToolbarPlannedChanged;
         }
-        if (_toolbarToggles?.Parent is Panel toolbarParent) toolbarParent.Children.Remove(_toolbarToggles);
+        if (_toolbarToggles?.Parent is System.Windows.Controls.Panel toolbarParent) toolbarParent.Children.Remove(_toolbarToggles);
         _toolbarToggles = null;
         _imagedToggle = null;
         _plannedToggle = null;
