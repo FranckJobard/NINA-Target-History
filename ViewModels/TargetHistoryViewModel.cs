@@ -207,6 +207,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             ? AstroUtil.ArcsecToDegree(item.ProfileSensorWidthPixels * scale) : 0d;
         item.FieldHeightDegrees = item.ProfileSensorHeightPixels > 0
             ? AstroUtil.ArcsecToDegree(item.ProfileSensorHeightPixels * scale) : 0d;
+        item.NotifyProfileFoVChanged();
     }
 
     private void LoadProfiles() {
