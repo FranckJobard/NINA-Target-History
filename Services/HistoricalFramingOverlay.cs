@@ -158,13 +158,13 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 var center = new System.Windows.Point(projected.X * scaleX, projected.Y * scaleY);
 
                 var width = target.FieldWidthDegrees > 0
-                    ? (AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth) * scaleX
+                    ? (AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth) * hostWidth * scaleX
                     : (native?.Width ?? 0d) * scaleX;
                 var height = target.FieldHeightDegrees > 0
-                    ? (AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight) * scaleY
+                    ? (AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight) * hostHeight * scaleY
                     : (native?.Height ?? 0d) * scaleY;
 
-                if (width <= 0 || height <= 0) continue;
+                if (width <= 0 || height <= 0 || !double.IsFinite(width) || !double.IsFinite(height)) continue;
                 if (center.X + width / 2d < 0 || center.Y + height / 2d < 0
                     || center.X - width / 2d > hostWidth
                     || center.Y - height / 2d > hostHeight) {
