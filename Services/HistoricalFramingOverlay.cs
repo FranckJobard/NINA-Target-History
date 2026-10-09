@@ -150,21 +150,19 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             var visible = 0;
 
             foreach (var target in candidates) {
-                // Imaged fields require an explicitly associated historical profile.
-                if (target.TotalSeconds > 0 && string.IsNullOrWhiteSpace(target.ProfileId)) continue;
                 var coordinates = new Coordinates(
                     target.RaDegrees, target.DecDegrees, Epoch.J2000, Coordinates.RAType.Degrees);
                 var projected = coordinates.XYProjection(viewport);
                 var center = new System.Windows.Point(projected.X * scaleX, projected.Y * scaleY);
 
                 var width = target.FieldWidthDegrees > 0
-                    ? (AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth) * hostWidth * scaleX
+                    ? (AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth) * scaleX
                     : (native?.Width ?? 0d) * scaleX;
                 var height = target.FieldHeightDegrees > 0
-                    ? (AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight) * hostHeight * scaleY
+                    ? (AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight) * scaleY
                     : (native?.Height ?? 0d) * scaleY;
 
-                if (width <= 0 || height <= 0 || !double.IsFinite(width) || !double.IsFinite(height)) continue;
+                if (width <= 0 || height <= 0) continue;
                 if (center.X + width / 2d < 0 || center.Y + height / 2d < 0
                     || center.X - width / 2d > hostWidth
                     || center.Y - height / 2d > hostHeight) {
