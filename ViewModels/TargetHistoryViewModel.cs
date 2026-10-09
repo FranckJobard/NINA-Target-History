@@ -1,4 +1,6 @@
 using System.IO;
+using System.Xml.Linq;
+using System.Globalization;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -26,6 +28,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     private string _search = "";
     private string _status = "All";
     private bool _showPlannedFields;
+    public ObservableCollection<ProfileChoice> AvailableProfiles { get; } = new();
     public ObservableCollection<TargetHistoryItem> Targets { get; } = new();
     public ObservableCollection<TargetHistoryItem> ImagedTargets { get; } = new();
     public ObservableCollection<TargetHistoryItem> PlannedTargets { get; } = new();
@@ -161,23 +164,11 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         Logger.Info($"Target History startup: Rebuild returned {data.Count} targets");
         foreach (var existing in Targets) existing.PropertyChanged -= Target_PropertyChanged;
         Targets.Clear();
-        // Attach the active N.I.N.A. instrument field to every target row.
-        // RA/Dec and PositionAngle already come from the sequence JSON.
-        var arcsecPerPixel = AstroUtil.ArcsecPerPixel(
-            _framingAssistantVM.CameraPixelSize, _framingAssistantVM.FocalLength);
-        var fieldWidthDegrees = _framingAssistantVM.CameraWidth > 0
-            ? AstroUtil.ArcsecToDegree(_framingAssistantVM.CameraWidth * arcsecPerPixel) : 0d;
-        var fieldHeightDegrees = _framingAssistantVM.CameraHeight > 0
-            ? AstroUtil.ArcsecToDegree(_framingAssistantVM.CameraHeight * arcsecPerPixel) : 0d;
-
+        // Keep the PR #93 overlay geometry; field dimensions now come from
+        // the immutable profile snapshot selected for each historical target.
+        LoadProfiles();
         foreach (var item in data) {
-            // Profile values are display-only: keep the PR #93 overlay calculation unchanged.
-            item.ProfileSensorWidthPixels = _profileService.ActiveProfile.FramingAssistantSettings.CameraWidth;
-            item.ProfileSensorHeightPixels = _profileService.ActiveProfile.FramingAssistantSettings.CameraHeight;
-            item.ProfilePixelSizeMicrons = _profileService.ActiveProfile.CameraSettings.PixelSize;
-            item.ProfileFocalLengthMm = _profileService.ActiveProfile.TelescopeSettings.FocalLength;
-            item.FieldWidthDegrees = fieldWidthDegrees;
-            item.FieldHeightDegrees = fieldHeightDegrees;
+            ApplyStoredOptics(item);
             item.PropertyChanged += Target_PropertyChanged;
             Targets.Add(item);
         }
@@ -187,9 +178,84 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     }
 
     private void Target_PropertyChanged(object? sender, PropertyChangedEventArgs e) {
+        if (e.PropertyName == nameof(TargetHistoryItem.ProfileId) && sender is TargetHistoryItem target) {
+            var profile = AvailableProfiles.FirstOrDefault(p => p.Id == target.ProfileId);
+            if (profile is not null) {
+                target.ProfileName = profile.Name;
+                target.ProfileSensorWidthPixels = profile.Width;
+                target.ProfileSensorHeightPixels = profile.Height;
+                target.ProfilePixelSizeMicrons = profile.PixelSize;
+                target.ProfileFocalLengthMm = profile.FocalLength;
+                ApplyStoredOptics(target);
+                _store?.SaveMetadata(Targets);
+                _historicalOverlay.Refresh();
+                // Refresh read-only columns after the profile selection.
+                System.Windows.Data.CollectionViewSource.GetDefaultView(ImagedTargets).Refresh();
+            }
+        }
         if (e.PropertyName == nameof(TargetHistoryItem.Finished)) {
             _store?.SaveMetadata(Targets);
             if (Status != "All") PopulateVisibleLists();
+        }
+    }
+
+    private void ApplyStoredOptics(TargetHistoryItem item) {
+        var focal = item.ProfileFocalLengthMm;
+        var pixel = item.ProfilePixelSizeMicrons;
+        var scale = focal > 0 && pixel > 0 ? AstroUtil.ArcsecPerPixel(pixel, focal) : 0d;
+        item.FieldWidthDegrees = item.ProfileSensorWidthPixels > 0
+            ? AstroUtil.ArcsecToDegree(item.ProfileSensorWidthPixels * scale) : 0d;
+        item.FieldHeightDegrees = item.ProfileSensorHeightPixels > 0
+            ? AstroUtil.ArcsecToDegree(item.ProfileSensorHeightPixels * scale) : 0d;
+    }
+
+    private void LoadProfiles() {
+        AvailableProfiles.Clear();
+        // N.I.N.A. stores named profiles as XML .profile files.
+        var roots = new[] {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NINA", "Profiles"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NINA", "Profiles")
+        };
+        foreach (var directory in roots.Distinct(StringComparer.OrdinalIgnoreCase)) {
+            if (!Directory.Exists(directory)) continue;
+            foreach (var path in Directory.EnumerateFiles(directory, "*.profile", SearchOption.TopDirectoryOnly)) {
+                try {
+                    var root = XDocument.Load(path).Root;
+                    if (root is null) continue;
+                    string? Read(string section, string key) {
+                        var node = root.Elements().FirstOrDefault(e => e.Name.LocalName == section);
+                        return node?.Elements().FirstOrDefault(e => e.Name.LocalName == key)?.Value;
+                    }
+                    string? Top(string key) => root.Elements().FirstOrDefault(e => e.Name.LocalName == key)?.Value;
+                    double Number(string section, string key) =>
+                        double.TryParse(Read(section, key), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : 0d;
+                    var id = Top("Id");
+                    var name = Top("Name");
+                    if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name)
+                        || AvailableProfiles.Any(p => p.Id == id)) continue;
+                    AvailableProfiles.Add(new ProfileChoice {
+                        Id = id, Name = name,
+                        Width = Number("FramingAssistantSettings", "CameraWidth"),
+                        Height = Number("FramingAssistantSettings", "CameraHeight"),
+                        PixelSize = Number("CameraSettings", "PixelSize"),
+                        FocalLength = Number("TelescopeSettings", "FocalLength")
+                    });
+                } catch (Exception ex) {
+                    Logger.Error(ex);
+                }
+            }
+        }
+        // Also offer the currently active profile if its file was not found.
+        var active = _profileService.ActiveProfile;
+        var activeId = active.Id.ToString();
+        if (!AvailableProfiles.Any(p => p.Id == activeId)) {
+            AvailableProfiles.Add(new ProfileChoice {
+                Id = activeId, Name = active.Name,
+                Width = active.FramingAssistantSettings.CameraWidth,
+                Height = active.FramingAssistantSettings.CameraHeight,
+                PixelSize = active.CameraSettings.PixelSize,
+                FocalLength = active.TelescopeSettings.FocalLength
+            });
         }
     }
 
@@ -246,4 +312,13 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
     }
     private void OnPropertyChanged([CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+public sealed class ProfileChoice {
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public double Width { get; init; }
+    public double Height { get; init; }
+    public double PixelSize { get; init; }
+    public double FocalLength { get; init; }
 }
