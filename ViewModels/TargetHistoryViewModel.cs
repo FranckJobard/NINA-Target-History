@@ -171,10 +171,20 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         var sensorHeightPixels = profile.FramingAssistantSettings.CameraHeight;
         var arcsecPerPixel = focalLength > 0 && pixelSize > 0
             ? AstroUtil.ArcsecPerPixel(pixelSize, focalLength) : 0d;
-        var fieldWidthDegrees = sensorWidthPixels > 0
+        double fieldWidthDegrees = sensorWidthPixels > 0
             ? AstroUtil.ArcsecToDegree(sensorWidthPixels * arcsecPerPixel) : 0d;
-        var fieldHeightDegrees = sensorHeightPixels > 0
+        double fieldHeightDegrees = sensorHeightPixels > 0
             ? AstroUtil.ArcsecToDegree(sensorHeightPixels * arcsecPerPixel) : 0d;
+        // Preserve the previously working field when profile settings are incomplete.
+        if (!double.IsFinite(fieldWidthDegrees) || !double.IsFinite(fieldHeightDegrees)
+            || fieldWidthDegrees <= 0 || fieldHeightDegrees <= 0) {
+            Logger.Info($"Target History: profile optics incomplete (focal={focalLength}, pixel={pixelSize}, width={sensorWidthPixels}, height={sensorHeightPixels}); using framing fallback");
+            var fallbackScale = _framingAssistantVM.FocalLength > 0 && _framingAssistantVM.CameraPixelSize > 0
+                ? AstroUtil.ArcsecPerPixel(_framingAssistantVM.CameraPixelSize, _framingAssistantVM.FocalLength) : 0d;
+            fieldWidthDegrees = AstroUtil.ArcsecToDegree(_framingAssistantVM.CameraWidth * fallbackScale);
+            fieldHeightDegrees = AstroUtil.ArcsecToDegree(_framingAssistantVM.CameraHeight * fallbackScale);
+        }
+
 
         foreach (var item in data) {
             item.FieldWidthDegrees = fieldWidthDegrees;
