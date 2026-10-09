@@ -187,6 +187,10 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
 
 
         foreach (var item in data) {
+            item.ProfileSensorWidthPixels = sensorWidthPixels;
+            item.ProfileSensorHeightPixels = sensorHeightPixels;
+            item.ProfilePixelSizeMicrons = pixelSize;
+            item.ProfileFocalLengthMm = focalLength;
             item.FieldWidthDegrees = fieldWidthDegrees;
             item.FieldHeightDegrees = fieldHeightDegrees;
             item.PropertyChanged += Target_PropertyChanged;
