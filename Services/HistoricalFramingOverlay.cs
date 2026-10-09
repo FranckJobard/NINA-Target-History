@@ -38,6 +38,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private INotifyPropertyChanged? _skyMapNotifier;
     private string _lastDiagnostic = "";
     private string _lastToolbarDiagnostic = "";
+    private string _lastGeometryDiagnostic = "";
 
     public HistoricalFramingOverlay(
         IFramingAssistantVM framing,
@@ -148,6 +149,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                          || (showPlanned && t.TotalSeconds <= 0))
                 .ToList();
             var visible = 0;
+            var geometry = new System.Collections.Generic.List<string>();
 
             foreach (var target in candidates) {
                 var coordinates = new Coordinates(
@@ -162,7 +164,10 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                     ? (AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight) * hostHeight * scaleY
                     : (native?.Height ?? 0d) * scaleY;
 
-                if (width <= 0 || height <= 0) continue;
+                if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0) {
+                    geometry.Add($"{target.Name}: invalid size {width:0.##}x{height:0.##} (field {target.FieldWidthDegrees:0.####}x{target.FieldHeightDegrees:0.####} deg)");
+                    continue;
+                }
                 if (center.X + width / 2d < 0 || center.Y + height / 2d < 0
                     || center.X - width / 2d > hostWidth
                     || center.Y - height / 2d > hostHeight) {
@@ -192,9 +197,16 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 Canvas.SetTop(rectangle, center.Y - height / 2d);
                 overlay.Children.Add(rectangle);
                 visible++;
+                geometry.Add($"{target.Name}: field={target.FieldWidthDegrees:0.####}x{target.FieldHeightDegrees:0.####}deg; rect={width:0.#}x{height:0.#}px; center=({center.X:0.#},{center.Y:0.#}); profile={target.ProfileName}");
             }
 
             Diagnostic($"sky overlay attached; fields={candidates.Count}; visible={visible}; imaged={showImaged}; planned={showPlanned}; viewport={viewport.Width:0}x{viewport.Height:0}");
+            // Log only when geometry changes; the 250 ms redraw timer must not flood N.I.N.A. logs.
+            var geometryDiagnostic = $"canvas={overlay.Width:0.#}x{overlay.Height:0.#}; actual={overlay.ActualWidth:0.#}x{overlay.ActualHeight:0.#}; children={overlay.Children.Count}; " + string.Join(" | ", geometry);
+            if (geometryDiagnostic != _lastGeometryDiagnostic) {
+                _lastGeometryDiagnostic = geometryDiagnostic;
+                Logger.Info($"Target History geometry: {geometryDiagnostic}");
+            }
         } catch (Exception ex) {
             Logger.Error(ex);
         }
