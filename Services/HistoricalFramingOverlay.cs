@@ -144,6 +144,11 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             overlay.Children.Clear();
 
             var native = _framing.CameraRectangles.FirstOrDefault();
+            // Current Framing Assistant field, independent of each target's saved optics.
+            var framingFoV = native is not null && native.Width > 0 && native.Height > 0
+                ? $"{native.Width / viewport.Width * viewport.ArcSecWidth / 3600d:0.###}° × {native.Height / viewport.Height * viewport.ArcSecHeight / 3600d:0.###}°"
+                : "—";
+            foreach (var item in _targets()) item.FramingFoVDisplay = framingFoV;
             var candidates = _targets()
                 .Where(t => (showImaged && t.TotalSeconds > 0)
                          || (showPlanned && t.TotalSeconds <= 0))
