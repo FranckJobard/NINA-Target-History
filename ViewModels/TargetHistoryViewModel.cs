@@ -220,7 +220,8 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             if (!Directory.Exists(directory)) continue;
             foreach (var path in Directory.EnumerateFiles(directory, "*.profile", SearchOption.TopDirectoryOnly)) {
                 try {
-                    var root = XDocument.Load(path).Root;
+                    using var profileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                    var root = XDocument.Load(profileStream).Root;
                     if (root is null) continue;
                     string? Read(string section, string key) {
                         var node = root.Elements().FirstOrDefault(e => e.Name.LocalName == section);
