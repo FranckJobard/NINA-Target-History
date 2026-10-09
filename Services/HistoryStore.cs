@@ -63,6 +63,11 @@ public sealed class HistoryStore {
                 if (metadata.Targets.TryGetValue(group.Key, out var m)) {
                     item.Finished = m.Finished;
                     item.AstroBinUrl = m.AstroBinUrl;
+                    item.ProfileId = m.ProfileId;
+                    item.ProfileSensorWidthPixels = m.SensorWidthPixels;
+                    item.ProfileSensorHeightPixels = m.SensorHeightPixels;
+                    item.ProfilePixelSizeMicrons = m.PixelSizeMicrons;
+                    item.ProfileFocalLengthMm = m.FocalLengthMm;
                 }
                 return item;
             })
@@ -77,7 +82,13 @@ public sealed class HistoryStore {
         foreach (var item in items) {
             data.Targets[Normalize(item.Name)] = new TargetMetadata {
                 Finished = item.Finished,
-                AstroBinUrl = item.AstroBinUrl
+                AstroBinUrl = item.AstroBinUrl,
+                ProfileId = item.ProfileId,
+                ProfileName = item.ProfileName,
+                SensorWidthPixels = item.ProfileSensorWidthPixels,
+                SensorHeightPixels = item.ProfileSensorHeightPixels,
+                PixelSizeMicrons = item.ProfilePixelSizeMicrons,
+                FocalLengthMm = item.ProfileFocalLengthMm
             };
         }
         File.WriteAllText(_settingsFile,
