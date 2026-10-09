@@ -1,4 +1,6 @@
-name: Build Target History - NINA 3.2
+name: Target History - NINA 3.2
+
+run-name: "Target History v0.94 - Profile selection and field geometry"
 
 on:
   workflow_dispatch:
@@ -37,18 +39,18 @@ jobs:
       - name: Upload Target History
         uses: actions/upload-artifact@v4
         with:
-          name: TargetHistory-NINA-3.2
+          name: TargetHistory-v0.94-NINA-3.2
           path: package
 
 
       - name: Upload DLL separately
         uses: actions/upload-artifact@v4
         with:
-          name: NINA.TargetHistory.dll
+          name: TargetHistory-v0.94-DLL
           path: bin\Release\net8.0-windows7.0\NINA.TargetHistory.dll
 
       - name: Upload PDB separately
         uses: actions/upload-artifact@v4
         with:
-          name: NINA.TargetHistory.pdb
+          name: TargetHistory-v0.94-PDB
           path: bin\Release\net8.0-windows7.0\NINA.TargetHistory.pdb
