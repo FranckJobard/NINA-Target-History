@@ -281,8 +281,11 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     // CameraRectangles collection. They use the same state as the dockable table.
     private void EnsureToolbarToggles() {
         if (_toolbarToggles?.Parent is System.Windows.Controls.Panel) return;
-        // Reuse the sky overlay we already located successfully. Its visual
-        // ancestors include the actual Framing ImageView in this N.I.N.A. build.
+        // Toolbar controls must be available even when both field categories are OFF.
+        // RefreshCore skips attaching the overlay when both are OFF, so attach the
+        // transparent sky layer here independently of field visibility.
+        if (_overlay?.Parent is null) EnsureOverlayAttached();
+        // Reuse the sky overlay to find the actual Framing ImageView ancestor.
         if (_overlay?.Parent is null) {
             ToolbarDiagnostic("waiting for attached sky overlay");
             return;
