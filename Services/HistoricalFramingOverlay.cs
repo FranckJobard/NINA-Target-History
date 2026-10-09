@@ -379,7 +379,9 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         var border = new FrameworkElementFactory(typeof(Border));
         border.Name = "SwitchBorder";
         border.SetValue(Border.CornerRadiusProperty, new CornerRadius(10));
-        border.SetValue(Border.PaddingProperty, new Thickness(7, 1, 7, 1));
+        border.SetValue(Border.PaddingProperty, new Thickness(0));
+        border.SetValue(Border.WidthProperty, 40.0);
+        border.SetValue(Border.HeightProperty, 20.0);
         border.SetValue(Border.MinWidthProperty, 40.0);
         border.SetValue(Border.BackgroundProperty, System.Windows.Media.Brushes.Transparent);
         border.SetValue(Border.BorderBrushProperty, accent);
@@ -388,6 +390,8 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         var label = new FrameworkElementFactory(typeof(TextBlock));
         label.Name = "SwitchLabel";
         label.SetValue(TextBlock.TextAlignmentProperty, TextAlignment.Center);
+        label.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+        label.SetValue(TextBlock.FontSizeProperty, 11.0);
         label.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
         label.SetValue(TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Gainsboro);
         label.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("IsChecked") {
