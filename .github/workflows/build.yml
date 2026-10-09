@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - restore/pr93-add-profile-optics-columns
+      - feature/manual-profile-assignment-fields
 
 jobs:
   build:
