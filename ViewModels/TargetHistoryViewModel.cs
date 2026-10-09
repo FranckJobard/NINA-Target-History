@@ -171,6 +171,11 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             ? AstroUtil.ArcsecToDegree(_framingAssistantVM.CameraHeight * arcsecPerPixel) : 0d;
 
         foreach (var item in data) {
+            // Profile values are display-only: keep the PR #93 overlay calculation unchanged.
+            item.ProfileSensorWidthPixels = _profileService.ActiveProfile.FramingAssistantSettings.CameraWidth;
+            item.ProfileSensorHeightPixels = _profileService.ActiveProfile.FramingAssistantSettings.CameraHeight;
+            item.ProfilePixelSizeMicrons = _profileService.ActiveProfile.CameraSettings.PixelSize;
+            item.ProfileFocalLengthMm = _profileService.ActiveProfile.TelescopeSettings.FocalLength;
             item.FieldWidthDegrees = fieldWidthDegrees;
             item.FieldHeightDegrees = fieldHeightDegrees;
             item.PropertyChanged += Target_PropertyChanged;
