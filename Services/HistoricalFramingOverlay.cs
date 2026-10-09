@@ -150,6 +150,8 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             var visible = 0;
 
             foreach (var target in candidates) {
+                // Imaged fields require an explicitly associated historical profile.
+                if (target.TotalSeconds > 0 && string.IsNullOrWhiteSpace(target.ProfileId)) continue;
                 var coordinates = new Coordinates(
                     target.RaDegrees, target.DecDegrees, Epoch.J2000, Coordinates.RAType.Degrees);
                 var projected = coordinates.XYProjection(viewport);
