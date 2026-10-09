@@ -138,6 +138,10 @@
     <DataGridTextColumn Header="Target" Binding="{Binding Name}" IsReadOnly="True" CanUserSort="True" SortMemberPath="Name" Width="2*">
      <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/></Style></DataGridTextColumn.ElementStyle>
     </DataGridTextColumn>
+    <DataGridTextColumn Header="Width (px)" Binding="{Binding ProfileSensorWidthPixels, StringFormat={}{0:0}}" IsReadOnly="True" SortMemberPath="ProfileSensorWidthPixels" Width="85"/>
+    <DataGridTextColumn Header="Height (px)" Binding="{Binding ProfileSensorHeightPixels, StringFormat={}{0:0}}" IsReadOnly="True" SortMemberPath="ProfileSensorHeightPixels" Width="85"/>
+    <DataGridTextColumn Header="Pixel size (µm)" Binding="{Binding ProfilePixelSizeMicrons, StringFormat={}{0:0.##}}" IsReadOnly="True" SortMemberPath="ProfilePixelSizeMicrons" Width="100"/>
+    <DataGridTextColumn Header="Focal length (mm)" Binding="{Binding ProfileFocalLengthMm, StringFormat={}{0:0.##}}" IsReadOnly="True" SortMemberPath="ProfileFocalLengthMm" Width="120"/>
     <DataGridTemplateColumn Header="Exposures" CanUserSort="False" Width="4*">
      <DataGridTemplateColumn.CellTemplate>
       <DataTemplate>
