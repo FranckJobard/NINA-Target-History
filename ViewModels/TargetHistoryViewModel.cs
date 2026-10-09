@@ -161,14 +161,20 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
         Logger.Info($"Target History startup: Rebuild returned {data.Count} targets");
         foreach (var existing in Targets) existing.PropertyChanged -= Target_PropertyChanged;
         Targets.Clear();
-        // Attach the active N.I.N.A. instrument field to every target row.
-        // RA/Dec and PositionAngle already come from the sequence JSON.
-        var arcsecPerPixel = AstroUtil.ArcsecPerPixel(
-            _framingAssistantVM.CameraPixelSize, _framingAssistantVM.FocalLength);
-        var fieldWidthDegrees = _framingAssistantVM.CameraWidth > 0
-            ? AstroUtil.ArcsecToDegree(_framingAssistantVM.CameraWidth * arcsecPerPixel) : 0d;
-        var fieldHeightDegrees = _framingAssistantVM.CameraHeight > 0
-            ? AstroUtil.ArcsecToDegree(_framingAssistantVM.CameraHeight * arcsecPerPixel) : 0d;
+        // Read the optical configuration from the active N.I.N.A. profile,
+        // not the Framing Assistant's potentially edited framing values.
+        // RA/Dec and PositionAngle still come from the sequence JSON.
+        var profile = _profileService.ActiveProfile;
+        var focalLength = profile.TelescopeSettings.FocalLength;
+        var pixelSize = profile.CameraSettings.PixelSize;
+        var sensorWidthPixels = profile.FramingAssistantSettings.CameraWidth;
+        var sensorHeightPixels = profile.FramingAssistantSettings.CameraHeight;
+        var arcsecPerPixel = focalLength > 0 && pixelSize > 0
+            ? AstroUtil.ArcsecPerPixel(pixelSize, focalLength) : 0d;
+        var fieldWidthDegrees = sensorWidthPixels > 0
+            ? AstroUtil.ArcsecToDegree(sensorWidthPixels * arcsecPerPixel) : 0d;
+        var fieldHeightDegrees = sensorHeightPixels > 0
+            ? AstroUtil.ArcsecToDegree(sensorHeightPixels * arcsecPerPixel) : 0d;
 
         foreach (var item in data) {
             item.FieldWidthDegrees = fieldWidthDegrees;
