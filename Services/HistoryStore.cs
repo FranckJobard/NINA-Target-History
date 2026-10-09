@@ -64,6 +64,7 @@ public sealed class HistoryStore {
                     item.Finished = m.Finished;
                     item.AstroBinUrl = m.AstroBinUrl;
                     item.ProfileId = m.ProfileId;
+                    item.ProfileName = m.ProfileName;
                     item.ProfileSensorWidthPixels = m.SensorWidthPixels;
                     item.ProfileSensorHeightPixels = m.SensorHeightPixels;
                     item.ProfilePixelSizeMicrons = m.PixelSizeMicrons;
