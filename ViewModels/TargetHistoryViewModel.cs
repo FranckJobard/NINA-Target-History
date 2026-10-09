@@ -79,6 +79,7 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             framingAssistantVM,
             () => Targets,
             () => ShowPlannedFields,
+            GetCurrentFramingFoV,
             value => ShowHistoricalFields = value,
             value => ShowPlannedFields = value);
         var ninaDefaultSequenceFolder = profileService.ActiveProfile.SequenceSettings.DefaultSequenceFolder;
@@ -197,6 +198,21 @@ public sealed class TargetHistoryViewModel : INotifyPropertyChanged, IDisposable
             _store?.SaveMetadata(Targets);
             if (Status != "All") PopulateVisibleLists();
         }
+    }
+
+    private string GetCurrentFramingFoV() {
+        // The current Framing Assistant uses these settings from the active profile.
+        // Do not infer optical field from the on-screen CameraRectangles dimensions.
+        var active = _profileService.ActiveProfile;
+        var width = active.FramingAssistantSettings.CameraWidth;
+        var height = active.FramingAssistantSettings.CameraHeight;
+        var pixel = active.CameraSettings.PixelSize;
+        var focal = active.TelescopeSettings.FocalLength;
+        if (width <= 0 || height <= 0 || pixel <= 0 || focal <= 0) return "—";
+        var scale = AstroUtil.ArcsecPerPixel(pixel, focal);
+        var fieldWidth = AstroUtil.ArcsecToDegree(width * scale);
+        var fieldHeight = AstroUtil.ArcsecToDegree(height * scale);
+        return $"{fieldWidth:0.###}° × {fieldHeight:0.###}°";
     }
 
     private void ApplyStoredOptics(TargetHistoryItem item) {
