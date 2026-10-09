@@ -152,6 +152,8 @@
     <DataGridTextColumn Header="Height (px)" Binding="{Binding ProfileSensorHeightPixels, StringFormat={}{0:0}}" IsReadOnly="True" SortMemberPath="ProfileSensorHeightPixels" Width="85"/>
     <DataGridTextColumn Header="Pixel size (µm)" Binding="{Binding ProfilePixelSizeMicrons, StringFormat={}{0:0.##}}" IsReadOnly="True" SortMemberPath="ProfilePixelSizeMicrons" Width="100"/>
     <DataGridTextColumn Header="Focal length (mm)" Binding="{Binding ProfileFocalLengthMm, StringFormat={}{0:0.##}}" IsReadOnly="True" SortMemberPath="ProfileFocalLengthMm" Width="120"/>
+    <DataGridTextColumn Header="Framing FoV (°)" Binding="{Binding FramingFoVDisplay}" IsReadOnly="True" Width="155"/>
+    <DataGridTextColumn Header="Profile FoV (°)" Binding="{Binding ProfileFoVDisplay}" IsReadOnly="True" Width="155"/>
     <DataGridTemplateColumn Header="Exposures" CanUserSort="False" Width="4*">
      <DataGridTemplateColumn.CellTemplate>
       <DataTemplate>
