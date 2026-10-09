@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - restore/pr93-add-profile-optics-columns
 
 jobs:
   build:
