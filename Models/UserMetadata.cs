@@ -6,6 +6,12 @@ public sealed class UserMetadata {
 }
 
 public sealed class TargetMetadata {
+    public string? ProfileId { get; set; }
+    public string? ProfileName { get; set; }
+    public double SensorWidthPixels { get; set; }
+    public double SensorHeightPixels { get; set; }
+    public double PixelSizeMicrons { get; set; }
+    public double FocalLengthMm { get; set; }
     public bool Finished { get; set; }
     public string? AstroBinUrl { get; set; }
 }
