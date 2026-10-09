@@ -25,6 +25,17 @@ public sealed class TargetHistoryItem : System.ComponentModel.INotifyPropertyCha
     public double ProfileFocalLengthMm { get; set; }
     public double FieldWidthDegrees { get; set; }
     public double FieldHeightDegrees { get; set; }
+    public string ProfileFoVDisplay => FieldWidthDegrees > 0 && FieldHeightDegrees > 0 ? $"{FieldWidthDegrees:0.###}° × {FieldHeightDegrees:0.###}°" : "—";
+    private string _framingFoVDisplay = "—";
+    public string FramingFoVDisplay {
+        get => _framingFoVDisplay;
+        set {
+            if (_framingFoVDisplay == value) return;
+            _framingFoVDisplay = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(FramingFoVDisplay)));
+        }
+    }
+    public void NotifyProfileFoVChanged() => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(ProfileFoVDisplay)));
     public DateTime MostRecentSequenceUtc { get; set; }
     public ObservableCollection<FilterTotal> Filters { get; } = new();
     public double TotalSeconds => Filters.Sum(x => x.Seconds);
