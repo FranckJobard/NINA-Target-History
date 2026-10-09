@@ -138,8 +138,9 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             // SkyMapAnnotator.SkyMapOverlay. ImageView/Viewbox performs display scaling.
             var hostWidth = viewport.Width;
             var hostHeight = viewport.Height;
-            var scaleX = 1d;
-            var scaleY = 1d;
+            // Angular field fractions must be converted to viewport pixel dimensions.
+            var scaleX = viewport.Width;
+            var scaleY = viewport.Height;
             overlay.Children.Clear();
 
             var native = _framing.CameraRectangles.FirstOrDefault();
@@ -153,14 +154,14 @@ public sealed class HistoricalFramingOverlay : IDisposable {
                 var coordinates = new Coordinates(
                     target.RaDegrees, target.DecDegrees, Epoch.J2000, Coordinates.RAType.Degrees);
                 var projected = coordinates.XYProjection(viewport);
-                var center = new System.Windows.Point(projected.X * scaleX, projected.Y * scaleY);
+                var center = new System.Windows.Point(projected.X, projected.Y);
 
                 var width = target.FieldWidthDegrees > 0
                     ? (AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth) * scaleX
-                    : (native?.Width ?? 0d) * scaleX;
+                    : (native?.Width ?? 0d);
                 var height = target.FieldHeightDegrees > 0
                     ? (AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight) * scaleY
-                    : (native?.Height ?? 0d) * scaleY;
+                    : (native?.Height ?? 0d);
 
                 if (width <= 0 || height <= 0) continue;
                 if (center.X + width / 2d < 0 || center.Y + height / 2d < 0
