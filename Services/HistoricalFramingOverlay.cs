@@ -26,6 +26,7 @@ public sealed class HistoricalFramingOverlay : IDisposable {
     private readonly IFramingAssistantVM _framing;
     private readonly Func<IEnumerable<TargetHistoryItem>> _targets;
     private readonly Func<bool> _showPlannedFields;
+    private readonly Func<string> _currentFramingFoV;
     private readonly PluginSettings _settings = new();
     private readonly DispatcherTimer _refreshTimer;
     private Canvas? _overlay;
@@ -44,11 +45,13 @@ public sealed class HistoricalFramingOverlay : IDisposable {
         IFramingAssistantVM framing,
         Func<IEnumerable<TargetHistoryItem>> targets,
         Func<bool> showPlannedFields,
+        Func<string> currentFramingFoV,
         Action<bool> setImagedFields,
         Action<bool> setPlannedFields) {
         _framing = framing;
         _targets = targets;
         _showPlannedFields = showPlannedFields;
+        _currentFramingFoV = currentFramingFoV;
         _setImagedFields = setImagedFields;
         _setPlannedFields = setPlannedFields;
         _settings.Load();
@@ -143,11 +146,9 @@ public sealed class HistoricalFramingOverlay : IDisposable {
             var scaleY = 1d;
             overlay.Children.Clear();
 
-            var native = _framing.CameraRectangles.FirstOrDefault();
-            // Current Framing Assistant field, independent of each target's saved optics.
-            var framingFoV = native is not null && native.Width > 0 && native.Height > 0
-                ? $"{native.Width / viewport.Width * viewport.ArcSecWidth / 3600d:0.###}° × {native.Height / viewport.Height * viewport.ArcSecHeight / 3600d:0.###}°"
-                : "—";
+            // Read the current framing optics directly; CameraRectangles dimensions
+            // are not a reliable angular field and must not be used as FoV.
+            var framingFoV = _currentFramingFoV();
             foreach (var item in _targets()) item.FramingFoVDisplay = framingFoV;
             var candidates = _targets()
                 .Where(t => (showImaged && t.TotalSeconds > 0)
@@ -164,10 +165,10 @@ public sealed class HistoricalFramingOverlay : IDisposable {
 
                 var width = target.FieldWidthDegrees > 0
                     ? (AstroUtil.DegreeToArcsec(target.FieldWidthDegrees) / viewport.ArcSecWidth) * hostWidth * scaleX
-                    : (native?.Width ?? 0d) * scaleX;
+                    : 0d;
                 var height = target.FieldHeightDegrees > 0
                     ? (AstroUtil.DegreeToArcsec(target.FieldHeightDegrees) / viewport.ArcSecHeight) * hostHeight * scaleY
-                    : (native?.Height ?? 0d) * scaleY;
+                    : 0d;
 
                 if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0) {
                     geometry.Add($"{target.Name}: invalid size {width:0.##}x{height:0.##} (field {target.FieldWidthDegrees:0.####}x{target.FieldHeightDegrees:0.####} deg)");
