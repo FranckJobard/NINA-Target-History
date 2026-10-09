@@ -9,6 +9,16 @@ public sealed class TargetHistoryItem : System.ComponentModel.INotifyPropertyCha
     public double PositionAngle { get; set; }
     // Hidden framing data carried by each row. These properties are intentionally
     // not displayed as DataGrid columns; they make each target self-contained.
+    private string? _profileId;
+    public string? ProfileId {
+        get => _profileId;
+        set {
+            if (_profileId == value) return;
+            _profileId = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(ProfileId)));
+        }
+    }
+    public string? ProfileName { get; set; }
     public double ProfileSensorWidthPixels { get; set; }
     public double ProfileSensorHeightPixels { get; set; }
     public double ProfilePixelSizeMicrons { get; set; }
